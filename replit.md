@@ -11,6 +11,10 @@ A production-ready multi-location hostess booking platform with advanced schedul
 - **Time Handling**: date-fns, date-fns-tz (America/Toronto timezone)
 
 ## Recent Changes
+- 2025-10-17: Analytics dashboard completed - revenue metrics, booking trends, cancellation rates with recharts visualization
+- 2025-10-17: Client self-service features - add notes and request cancellation on bookings
+- 2025-10-17: Photo upload for hostesses with multer integration
+- 2025-10-17: Auth flow fixed - JWT tokens stored in localStorage with proper Authorization headers
 - 2025-01-17: Initial project scaffold with complete schema and frontend components
 - Complete database schema with users, hostesses, services, bookings, time-off, weekly schedules, and audit logs
 - Authentication system with JWT and role-based access
@@ -164,6 +168,7 @@ id,hostess,mon_day,mon_night,tue_day,tue_night,...
 - GET /api/bookings/upcoming
 - POST /api/bookings (full validation + conflict check)
 - POST /api/bookings/:id/cancel (role-based rules)
+- PATCH /api/bookings/:id/notes (client can add notes to their bookings)
 
 ### Services
 - GET /api/services (sorted asc by durationMin)
@@ -178,6 +183,11 @@ id,hostess,mon_day,mon_night,tue_day,tue_night,...
 - PATCH /api/admin/users/:id (role + hostess link)
 - POST /api/schedule/import
 - GET /api/schedule/export?location=
+
+### Analytics (Admin-Only)
+- GET /api/analytics/revenue?groupBy=hostess|location|service - Revenue breakdown by specified dimension
+- GET /api/analytics/bookings-trend?days=7|30|90 - Booking trends over time period
+- GET /api/analytics/cancellations - Status distribution and cancellation metrics
 
 ## Environment Variables
 - `DATABASE_URL`: Supabase PostgreSQL connection string (transaction pooler)
@@ -218,12 +228,20 @@ The database can be seeded with comprehensive sample data using `server/seed.ts`
 
 Note: Seed script is idempotent and will skip if data already exists.
 
+## Implemented Features
+- ✅ Advanced analytics dashboard with revenue, trends, and cancellation metrics
+- ✅ Photo upload for hostesses (multer integration, file storage in attached_assets/hostess-photos/)
+- ✅ Client self-service: add notes to bookings, request cancellations
+- ✅ Database seed script with comprehensive sample data
+- ✅ Role-based access control (ADMIN, STAFF, RECEPTION, CLIENT)
+- ✅ Double-booking prevention with transaction locks
+- ✅ CSV import/export for weekly schedules
+- ✅ Bulk client import with rate limiting
+
 ## Next Phase Features (Not Yet Implemented)
 - Payment processing (Stripe integration)
 - Email notifications (booking confirmations, reminders)
 - SMS notifications
-- Advanced analytics dashboard
-- Photo upload for hostesses
 - Recurring bookings
 - Client feedback/ratings
 - Multi-language support
