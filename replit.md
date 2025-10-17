@@ -17,6 +17,7 @@ A production-ready multi-location hostess booking platform with advanced schedul
 - Admin daily grid with 15-minute slots (10:00-23:00) and quick booking modal
 - Client-facing hostess discovery and booking interface
 - Services CRUD management
+- Database seed script with comprehensive sample data (10 services, 20 hostesses, 50 clients, bookings, schedules)
 
 ## User Roles & Permissions
 ### ADMIN
@@ -191,6 +192,9 @@ npm install
 # Push schema to database
 npm run db:push
 
+# Seed database with sample data (run once)
+NODE_ENV=development tsx server/seed.ts
+
 # Run dev servers (Express + Vite)
 npm run dev
 
@@ -200,6 +204,19 @@ npm run build
 # Start production server
 npm start
 ```
+
+### Seed Data
+The database can be seeded with comprehensive sample data using `server/seed.ts`:
+- **Admin user**: admin@base44.com / admin123
+- **Reception user**: reception@base44.com / reception123
+- **10 Services**: Ranging from 15-min Express Session ($30) to 6-hour Full Day Experience ($600)
+- **20 Hostesses**: 10 Downtown, 10 West End with unique bios and specialties
+- **120 Weekly Schedules**: Mon-Fri 10:00-18:00 (day) + 19:00-23:00 (night), Sat 12:00-20:00 (day only)
+- **50 Client users**: client1@example.com - client50@example.com / client123
+- **30 Sample Bookings**: Spread across today and next 2 days
+- **5 Time-Off Blocks**: Sample unavailability for next week
+
+Note: Seed script is idempotent and will skip if data already exists.
 
 ## Next Phase Features (Not Yet Implemented)
 - Payment processing (Stripe integration)
