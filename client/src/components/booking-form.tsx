@@ -42,6 +42,24 @@ export function BookingForm({ hostessId, selectedDate, onCancel, onSuccess }: Bo
   // Fetch available slots for the selected date
   const { data: availability } = useQuery({
     queryKey: ["/api/bookings/availability", hostessId, selectedDate ? format(selectedDate, "yyyy-MM-dd") : ""],
+    queryFn: async () => {
+      if (!selectedDate) return { bookedSlots: [] };
+      
+      const token = localStorage.getItem("auth_token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const url = `/api/bookings/availability?hostessId=${hostessId}&date=${format(selectedDate, "yyyy-MM-dd")}`;
+      const res = await fetch(url, { headers, credentials: "include" });
+      
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${await res.text()}`);
+      }
+      
+      return await res.json();
+    },
     enabled: !!selectedDate,
   });
 
@@ -63,6 +81,7 @@ export function BookingForm({ hostessId, selectedDate, onCancel, onSuccess }: Bo
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.refetchQueries({ queryKey: ["/api/bookings/my"] });
       toast({
         title: "Booking created",
         description: "Your appointment has been scheduled successfully",

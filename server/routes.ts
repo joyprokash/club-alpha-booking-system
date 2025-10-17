@@ -414,6 +414,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const schema = insertBookingSchema.extend({
         clientEmail: z.string().email().optional(),
+        clientId: z.string().optional(), // Optional - derived from auth or clientEmail
+        status: z.enum(["PENDING", "CONFIRMED", "COMPLETED", "CANCELED"]).optional(), // Optional - defaults to PENDING
       });
       const data = schema.parse(req.body);
 

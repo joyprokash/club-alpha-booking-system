@@ -168,6 +168,11 @@ function AppRouter() {
           <MyBookings />
         </ProtectedRoute>
       </Route>
+      <Route path="/my-bookings">
+        <ProtectedRoute>
+          <MyBookings />
+        </ProtectedRoute>
+      </Route>
 
       {/* Default redirect */}
       <Route path="/">
