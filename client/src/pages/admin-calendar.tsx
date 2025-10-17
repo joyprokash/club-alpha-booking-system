@@ -146,11 +146,11 @@ export default function AdminCalendar() {
         <div className="flex h-full">
           {/* Time Column */}
           <div className="w-20 flex-shrink-0 border-r bg-muted/30 sticky left-0 z-30">
-            <div className="h-14 border-b bg-card" />
+            <div className="h-10 border-b bg-card" />
             {timeSlots.map((slot) => (
               <div
                 key={slot}
-                className="h-12 border-b flex items-center justify-center text-time-label text-muted-foreground"
+                className="h-6 border-b flex items-center justify-center text-time-label text-muted-foreground text-xs"
               >
                 {formatTimeRange(slot, slot + SLOT_DURATION)}
               </div>
@@ -163,19 +163,19 @@ export default function AdminCalendar() {
               {sortedHostesses.map((hostess) => (
                 <div key={hostess.id} className="w-52 border-r flex-shrink-0">
                   {/* Header */}
-                  <div className="h-14 border-b bg-card flex items-center justify-between px-3 sticky top-0 z-20">
+                  <div className="h-10 border-b bg-card flex items-center justify-between px-2 sticky top-0 z-20">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-6 w-6">
                         <AvatarImage src={hostess.photoUrl || undefined} />
                         <AvatarFallback className="text-xs">
                           {hostess.displayName.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-grid-header truncate">
+                      <span className="text-xs truncate font-medium">
                         {hostess.displayName}
                       </span>
                     </div>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs h-5">
                       {hostess.location === "DOWNTOWN" ? "D" : "W"}
                     </Badge>
                   </div>
@@ -188,7 +188,7 @@ export default function AdminCalendar() {
                     return (
                       <div
                         key={slot}
-                        className={`h-12 border-b cursor-pointer transition-colors ${
+                        className={`h-6 border-b cursor-pointer transition-colors ${
                           isAvailable
                             ? "bg-card hover:bg-muted/30"
                             : booking.status === "CONFIRMED" || booking.status === "PENDING"
@@ -199,7 +199,7 @@ export default function AdminCalendar() {
                         data-testid={`cell-${hostess.id}-${slot}`}
                       >
                         {booking && (
-                          <div className="p-1 text-xs truncate text-white font-medium">
+                          <div className="px-1 text-xs truncate text-white font-medium leading-6">
                             {booking.client.email.split('@')[0]}
                           </div>
                         )}
