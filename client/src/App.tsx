@@ -33,6 +33,7 @@ import StaffSchedule from "@/pages/staff-schedule";
 
 // Shared
 import NotFound from "@/pages/not-found";
+import Home from "@/pages/home";
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
@@ -174,14 +175,16 @@ function AppRouter() {
         </ProtectedRoute>
       </Route>
 
-      {/* Default redirect */}
+      {/* Default route - show homepage for unauthenticated, redirect for authenticated */}
       <Route path="/">
         {isLoading ? (
           <div className="min-h-screen flex items-center justify-center">
             <div className="animate-pulse text-muted-foreground">Loading...</div>
           </div>
-        ) : (
+        ) : user ? (
           <Redirect to={getDefaultRoute()} />
+        ) : (
+          <Home />
         )}
       </Route>
 
