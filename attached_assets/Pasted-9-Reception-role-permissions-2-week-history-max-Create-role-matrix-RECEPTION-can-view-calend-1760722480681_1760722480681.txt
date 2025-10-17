@@ -1,0 +1,86 @@
+9) Reception role permissions (2-week history max)
+
+“Create role matrix:
+
+RECEPTION can: view calendar, create bookings, cancel future bookings, edit weekly schedules, block time off, export schedule, view only last 14 days of history. Can NOT delete entities, can NOT edit past bookings, can NOT run bulk delete, can NOT manage users.
+
+Enforce via middleware and service-layer checks. Hide restricted UI. Add server-side filters that clamp queries to date >= today-14d for reception.”
+
+10) Admin tools & safety
+
+“Admin dashboard cards:
+
+Today’s appts by location, upcoming appts list with location badges.
+
+Quick actions: Import/Export schedules, Block Time Off, Manage Users, Services CRUD.
+
+AuditLog write on create/update/cancel actions with user id and payload snapshot.”
+
+11) Hostess ↔ Staff linking workflow
+
+“On /admin/users:
+
+Change role (CLIENT/STAFF/RECEPTION/ADMIN).
+
+If role=STAFF, show drop-down to link to a Hostess profile by name; prevent multi-link; allow unlink.
+
+When a STAFF logs in, redirect to /calendar/day filtered to themselves and show ‘Your appointments today / upcoming’ panels.”
+
+12) Bulk client import (14,000 emails) with forced password change
+
+“Add /admin/bulk-import-clients:
+
+Upload CSV with email,name?.
+
+Create User with role=CLIENT, random temp password (server-generated) OR set a default and immediately set forcePasswordReset=true.
+
+On login, if forcePasswordReset, block app usage until /auth/reset-password completes.
+
+Rate-limit the endpoint, chunk insert in transactions, dedupe by email, idempotent re-runs.”
+
+13) Error handling & null guards
+
+“Global error middleware returning { error: { code, message, details? } }.
+
+All list queries must guard against null strings when sorting (localeCompare safe fallback).
+
+Add Zod validation for all payloads. Return 400 with human-readable messages.
+
+Front-end shows toast errors and disables double submits with loading states.”
+
+14) Booking overlap rules (hard truth version)
+
+“Implement a pure function hasConflict({ startA, endA }, { startB, endB }) and use it everywhere. A booking is valid only if it does not overlap any non-canceled booking and fits within WeeklySchedule + TimeOff. Add unit tests covering:
+
+Edge touch (end == start) OK.
+
+Full containment and partial overlaps blocked.
+
+Cross-hour overlaps and 15-min grid correctness.”
+
+15) Rate-limits & concurrency
+
+“Protect hotspot endpoints (/bookings, /import-schedule, /bulk-import-clients) with:
+
+IP + user rate-limit.
+
+DB transaction + advisory lock per (hostessId, date) on booking create/update.
+
+Return 409 CONFLICT on racing attempts.”
+
+16) QR codes & links
+
+“Add a tiny utility endpoint to return a PNG QR code for any URL (uses qrcode npm). Admin UI button: ‘Download QR for Client Portal’.”
+
+17) Testing seeds & fixtures
+
+“Create seed script:
+
+10 services (30,45,60,75,90,105,120 mins).
+
+20 hostesses across both locations with weekly schedules.
+
+50 clients.
+
+A few random bookings/time-off.
+Add npm run seed. Provide example .csv files for import/export.”

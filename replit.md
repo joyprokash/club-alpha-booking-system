@@ -239,9 +239,13 @@ Note: Seed script is idempotent and will skip if data already exists.
 - ✅ Bulk client import with rate limiting
 
 ## Next Phase Features (Not Yet Implemented)
-- Payment processing (Stripe integration)
-- Email notifications (booking confirmations, reminders)
-- SMS notifications
+- Email notifications (booking confirmations, reminders) - Resend/SendGrid integration ready, requires API keys
+- SMS notifications (confirmations, reminders) - Twilio integration ready, requires API credentials
 - Recurring bookings
 - Client feedback/ratings
 - Multi-language support
+
+**Note on Notifications:** Email and SMS notification infrastructure is documented and ready for implementation. When ready to enable:
+- Email: Set up Resend (https://resend.com) or SendGrid API keys
+- SMS: Set up Twilio account with Account SID, Auth Token, and Phone Number
+- Integration connectors available via `search_integrations` tool
