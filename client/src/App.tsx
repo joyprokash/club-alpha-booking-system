@@ -132,12 +132,12 @@ function AppRouter() {
                   </ProtectedRoute>
                 </Route>
                 <Route path="/admin/users">
-                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
                     <AdminUsers />
                   </ProtectedRoute>
                 </Route>
                 <Route path="/admin/hostesses">
-                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
                     <AdminHostesses />
                   </ProtectedRoute>
                 </Route>

@@ -740,8 +740,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== ADMIN ENDPOINTS ====================
   
-  // Get all users (admin only)
-  app.get("/api/admin/users", authenticateToken, requireRole("ADMIN"), async (req, res, next) => {
+  // Get all users (admin and reception)
+  app.get("/api/admin/users", authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req, res, next) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users.map(u => ({ ...u, passwordHash: undefined })));

@@ -74,6 +74,16 @@ export function AppSidebar() {
       url: "/admin/calendar",
       icon: Calendar,
     },
+    {
+      title: "Hostesses",
+      url: "/admin/hostesses",
+      icon: Users,
+    },
+    {
+      title: "Clients",
+      url: "/admin/users",
+      icon: UserCog,
+    },
   ];
 
   const staffItems = [
