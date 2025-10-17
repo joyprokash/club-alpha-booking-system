@@ -164,18 +164,16 @@ export default function AdminCalendar() {
                         key={slot}
                         className={`h-12 border-b cursor-pointer transition-colors ${
                           isAvailable
-                            ? "bg-available/10 hover:bg-available/20"
-                            : booking.status === "CONFIRMED"
+                            ? "bg-card hover:bg-muted/30"
+                            : booking.status === "CONFIRMED" || booking.status === "PENDING"
                             ? "bg-booked"
-                            : booking.status === "PENDING"
-                            ? "bg-pending"
                             : "bg-muted"
                         }`}
                         onClick={() => handleCellClick(hostess.id, slot)}
                         data-testid={`cell-${hostess.id}-${slot}`}
                       >
                         {booking && (
-                          <div className="p-1 text-xs truncate text-white">
+                          <div className="p-1 text-xs truncate text-white font-medium">
                             {booking.client.email.split('@')[0]}
                           </div>
                         )}

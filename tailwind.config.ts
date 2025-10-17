@@ -76,13 +76,13 @@ export default {
           border: "var(--sidebar-accent-border)"
         },
         // Status colors for booking grid
-        available: "hsl(145 55% 45% / <alpha-value>)", // muted teal
-        booked: "hsl(210 85% 55% / <alpha-value>)", // vibrant blue
-        "time-off": "hsl(25 75% 55% / <alpha-value>)", // warm amber
+        available: "hsl(0 0% 100% / <alpha-value>)", // clean white
+        booked: "hsl(217 91% 60% / <alpha-value>)", // vibrant blue
+        "time-off": "hsl(0 84% 60% / <alpha-value>)", // bright red
         "outside-schedule": "hsl(220 10% 18% / <alpha-value>)", // subtle gray
         conflict: "hsl(0 75% 60% / <alpha-value>)", // clear red
-        confirmed: "hsl(145 60% 50% / <alpha-value>)", // success green
-        pending: "hsl(45 85% 60% / <alpha-value>)", // attention yellow
+        confirmed: "hsl(217 91% 60% / <alpha-value>)", // vibrant blue (matches booked)
+        pending: "hsl(217 91% 60% / <alpha-value>)", // vibrant blue (matches booked)
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

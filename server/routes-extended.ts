@@ -14,6 +14,7 @@ export function registerExtendedRoutes(app: Express) {
     windowMs: 60 * 1000,
     max: 3,
     message: { error: { code: "RATE_LIMIT", message: "Too many import requests" } },
+    validate: { trustProxy: false },
   });
 
   // ==================== TIME OFF ENDPOINTS ====================

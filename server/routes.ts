@@ -53,12 +53,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     windowMs: 15 * 60 * 1000,
     max: 5,
     message: { error: { code: "RATE_LIMIT", message: "Too many attempts, please try again later" } },
+    validate: { trustProxy: false },
   });
 
   const bookingLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 10,
     message: { error: { code: "RATE_LIMIT", message: "Too many booking requests" } },
+    validate: { trustProxy: false },
   });
 
   // ==================== AUTH ENDPOINTS ====================
