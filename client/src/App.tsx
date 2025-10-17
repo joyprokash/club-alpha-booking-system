@@ -23,6 +23,7 @@ import MyBookings from "@/pages/my-bookings";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminCalendar from "@/pages/admin-calendar";
 import AdminServices from "@/pages/admin-services";
+import AdminAnalytics from "@/pages/admin-analytics";
 
 // Reception pages
 import ReceptionCalendar from "@/pages/reception-calendar";
@@ -117,6 +118,11 @@ function AppRouter() {
                 <Route path="/admin/services">
                   <ProtectedRoute allowedRoles={["ADMIN"]}>
                     <AdminServices />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/admin/analytics">
+                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminAnalytics />
                   </ProtectedRoute>
                 </Route>
 

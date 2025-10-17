@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "./queryClient";
+import { apiRequest, queryClient, getQueryFn } from "./queryClient";
 import type { User } from "@shared/schema";
 
 interface AuthContextType {
@@ -17,13 +17,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: user, isLoading } = useQuery<User | null>({
     queryKey: ["/api/auth/me"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
   });
 
   const loginMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      const result = await apiRequest("POST", "/api/auth/login", { email, password });
-      return result;
+      const response = await apiRequest("POST", "/api/auth/login", { email, password });
+      const data = await response.json();
+      // Store token in localStorage
+      if (data.token) {
+        localStorage.setItem("auth_token", data.token);
+      }
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -33,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/auth/logout", {});
+      localStorage.removeItem("auth_token");
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/auth/me"], null);
@@ -41,7 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      await apiRequest("POST", "/api/auth/register", { email, password });
+      const response = await apiRequest("POST", "/api/auth/register", { email, password });
+      const data = await response.json();
+      // Store token in localStorage
+      if (data.token) {
+        localStorage.setItem("auth_token", data.token);
+      }
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });

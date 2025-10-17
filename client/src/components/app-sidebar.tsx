@@ -1,4 +1,4 @@
-import { Calendar, Users, Settings, LayoutDashboard, UserCog, Clock, FileUp, FileDown, LogOut } from "lucide-react";
+import { Calendar, Users, Settings, LayoutDashboard, UserCog, Clock, FileUp, FileDown, LogOut, BarChart3 } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   Sidebar,
@@ -30,6 +30,11 @@ export function AppSidebar() {
       title: "Calendar",
       url: "/admin/calendar",
       icon: Calendar,
+    },
+    {
+      title: "Analytics",
+      url: "/admin/analytics",
+      icon: BarChart3,
     },
     {
       title: "Users",
