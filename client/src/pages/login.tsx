@@ -41,7 +41,23 @@ export default function Login() {
       if (result?.requiresPasswordReset) {
         setLocation("/reset-password");
       } else {
-        setLocation("/");
+        // Redirect based on user role
+        const userRole = result?.user?.role || result?.role;
+        switch (userRole) {
+          case "ADMIN":
+            setLocation("/admin/dashboard");
+            break;
+          case "RECEPTION":
+            setLocation("/admin/calendar");
+            break;
+          case "STAFF":
+            setLocation("/staff/schedule");
+            break;
+          case "CLIENT":
+          default:
+            setLocation("/hostesses");
+            break;
+        }
       }
     } catch (error: any) {
       toast({

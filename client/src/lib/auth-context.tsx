@@ -6,7 +6,7 @@ import type { User } from "@shared/schema";
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ requiresPasswordReset?: boolean }>;
+  login: (email: string, password: string) => Promise<{ requiresPasswordReset?: boolean; user?: User; role?: string }>;
   logout: () => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   resetPassword: (oldPassword: string, newPassword: string) => Promise<void>;
