@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/theme-toggle";
+import logoUrl from "@assets/club-alpha-badge (1)_1760718368973.png";
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -64,9 +65,12 @@ export default function Register() {
       </div>
       
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-          <CardDescription>Register as a new client</CardDescription>
+        <CardHeader className="space-y-3">
+          <div className="flex justify-center">
+            <img src={logoUrl} alt="Club Alpha" className="h-20 w-20" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+          <CardDescription className="text-center">Register as a new client</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

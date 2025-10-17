@@ -10,9 +10,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  SidebarHeader,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import logoUrl from "@assets/club-alpha-badge (1)_1760718368973.png";
 
 export function AppSidebar() {
   const [location, setLocation] = useLocation();
@@ -108,9 +110,18 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
+      <SidebarHeader className="p-4 border-b">
+        <div className="flex items-center gap-3">
+          <img src={logoUrl} alt="Club Alpha" className="h-10 w-10" />
+          <div>
+            <h2 className="font-semibold text-lg">Club Alpha</h2>
+            <p className="text-xs text-muted-foreground">Booking Platform</p>
+          </div>
+        </div>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Base44 Booking</SidebarGroupLabel>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (

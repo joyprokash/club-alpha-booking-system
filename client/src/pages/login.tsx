@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/theme-toggle";
+import logoUrl from "@assets/club-alpha-badge (1)_1760718368973.png";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -60,9 +61,12 @@ export default function Login() {
       </div>
       
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your Base44 account</CardDescription>
+        <CardHeader className="space-y-3">
+          <div className="flex justify-center">
+            <img src={logoUrl} alt="Club Alpha" className="h-20 w-20" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
+          <CardDescription className="text-center">Sign in to your Club Alpha account</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
