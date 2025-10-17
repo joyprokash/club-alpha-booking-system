@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +23,8 @@ export default function AdminCalendar() {
   const [quickBookingOpen, setQuickBookingOpen] = useState(false);
   const [editBookingOpen, setEditBookingOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>("compact");
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const [resizing, setResizing] = useState<{ hostessId: string; startX: number; startWidth: number } | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     hostessId: string;
     date: string;
@@ -117,6 +119,45 @@ export default function AdminCalendar() {
       setEditBookingOpen(true);
     }
   };
+
+  const handleResizeStart = (e: React.MouseEvent, hostessId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const currentWidth = columnWidths[hostessId] || getDefaultColumnWidth();
+    setResizing({ hostessId, startX: e.clientX, startWidth: currentWidth });
+  };
+
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!resizing) return;
+    const delta = e.clientX - resizing.startX;
+    const newWidth = Math.max(100, resizing.startWidth + delta);
+    setColumnWidths(prev => ({ ...prev, [resizing.hostessId]: newWidth }));
+  };
+
+  const handleResizeEnd = () => {
+    setResizing(null);
+  };
+
+  const getDefaultColumnWidth = () => {
+    const widthMap = { compact: 128, normal: 176, comfortable: 224 };
+    return widthMap[zoomLevel];
+  };
+
+  const getColumnWidth = (hostessId: string) => {
+    return columnWidths[hostessId] || getDefaultColumnWidth();
+  };
+
+  // Add mouse event listeners for resizing
+  useEffect(() => {
+    if (resizing) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      return () => {
+        document.removeEventListener('mousemove', handleResizeMove);
+        document.removeEventListener('mouseup', handleResizeEnd);
+      };
+    }
+  }, [resizing]);
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -246,9 +287,13 @@ export default function AdminCalendar() {
           <div className="flex-1 overflow-x-auto">
             <div className="flex min-w-max">
               {sortedHostesses.map((hostess) => (
-                <div key={hostess.id} className={`${currentZoom.columnWidth} border-r flex-shrink-0`}>
+                <div 
+                  key={hostess.id} 
+                  className="border-r flex-shrink-0 relative"
+                  style={{ width: `${getColumnWidth(hostess.id)}px` }}
+                >
                   {/* Header */}
-                  <div className={`${currentZoom.headerHeight} border-b bg-card flex items-center justify-between px-2 sticky top-0 z-20`}>
+                  <div className={`${currentZoom.headerHeight} border-b bg-card flex items-center justify-between px-2 sticky top-0 z-20 relative`}>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <Avatar className={currentZoom.avatarSize}>
                         <AvatarImage src={hostess.photoUrl || undefined} />
@@ -263,6 +308,13 @@ export default function AdminCalendar() {
                     <Badge variant="outline" className={`${currentZoom.textSize} ${currentZoom.badgeHeight}`}>
                       {hostess.location === "DOWNTOWN" ? "D" : "W"}
                     </Badge>
+                    
+                    {/* Resize Handle */}
+                    <div
+                      className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors z-30"
+                      onMouseDown={(e) => handleResizeStart(e, hostess.id)}
+                      data-testid={`resize-handle-${hostess.id}`}
+                    />
                   </div>
 
                   {/* Slots */}
