@@ -14,7 +14,9 @@ export default function Hostesses() {
   const [locationFilter, setLocationFilter] = useState<string>("all");
 
   const { data: hostesses, isLoading } = useQuery<Hostess[]>({
-    queryKey: ["/api/hostesses", { location: locationFilter === "all" ? undefined : locationFilter }],
+    queryKey: locationFilter === "all" 
+      ? ["/api/hostesses"]
+      : ["/api/hostesses?location=" + locationFilter],
   });
 
   const sortedHostesses = hostesses?.slice().sort((a, b) => 

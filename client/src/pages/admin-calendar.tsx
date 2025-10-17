@@ -26,11 +26,15 @@ export default function AdminCalendar() {
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
   const { data: hostesses } = useQuery<Hostess[]>({
-    queryKey: ["/api/hostesses", { location: locationFilter === "all" ? undefined : locationFilter }],
+    queryKey: locationFilter === "all"
+      ? ["/api/hostesses"]
+      : ["/api/hostesses?location=" + locationFilter],
   });
 
   const { data: bookings } = useQuery<BookingWithDetails[]>({
-    queryKey: ["/api/bookings/day", { date: dateStr, location: locationFilter === "all" ? undefined : locationFilter }],
+    queryKey: locationFilter === "all"
+      ? [`/api/bookings/day?date=${dateStr}`]
+      : [`/api/bookings/day?date=${dateStr}&location=${locationFilter}`],
   });
 
   const sortedHostesses = hostesses?.slice().sort((a, b) => 

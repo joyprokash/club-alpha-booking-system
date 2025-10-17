@@ -3,11 +3,18 @@ import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import type { User } from "@shared/schema";
 
-if (!process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET environment variable is required");
-}
+// In production, JWT_SECRET must be set. In development, generate a random one.
+let JWT_SECRET: string;
 
-const JWT_SECRET = process.env.JWT_SECRET;
+if (process.env.JWT_SECRET) {
+  JWT_SECRET = process.env.JWT_SECRET;
+} else if (process.env.NODE_ENV === 'production') {
+  throw new Error("JWT_SECRET environment variable is required in production");
+} else {
+  // Development mode: generate a random secret (will change on restart)
+  JWT_SECRET = `dev-${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`;
+  console.warn("⚠️  Using generated JWT_SECRET in development. Tokens will be invalid after restart.");
+}
 
 export interface AuthRequest extends Request {
   user?: User;
