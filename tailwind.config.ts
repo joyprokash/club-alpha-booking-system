@@ -11,7 +11,7 @@ export default {
         sm: ".1875rem", /* 3px */
       },
       colors: {
-        // Flat / base colors (regular buttons)
+        // Base colors
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",
         border: "hsl(var(--border) / <alpha-value>)",
@@ -75,17 +75,33 @@ export default {
           foreground: "hsl(var(--sidebar-accent-foreground) / <alpha-value>)",
           border: "var(--sidebar-accent-border)"
         },
-        status: {
-          online: "rgb(34 197 94)",
-          away: "rgb(245 158 11)",
-          busy: "rgb(239 68 68)",
-          offline: "rgb(156 163 175)",
-        },
+        // Status colors for booking grid
+        available: "hsl(145 55% 45% / <alpha-value>)", // muted teal
+        booked: "hsl(210 85% 55% / <alpha-value>)", // vibrant blue
+        "time-off": "hsl(25 75% 55% / <alpha-value>)", // warm amber
+        "outside-schedule": "hsl(220 10% 18% / <alpha-value>)", // subtle gray
+        conflict: "hsl(0 75% 60% / <alpha-value>)", // clear red
+        confirmed: "hsl(145 60% 50% / <alpha-value>)", // success green
+        pending: "hsl(45 85% 60% / <alpha-value>)", // attention yellow
       },
       fontFamily: {
         sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
+      },
+      fontSize: {
+        // Admin/Reception scale
+        'grid-header': ['13px', { lineHeight: '1.1', fontWeight: '600', letterSpacing: '0.05em' }],
+        'time-label': ['12px', { lineHeight: '1.2', fontWeight: '500' }],
+        'booking-card': ['14px', { lineHeight: '1.4', fontWeight: '400' }],
+        'section-title': ['18px', { lineHeight: '1.3', fontWeight: '600' }],
+        'dashboard-metric': ['32px', { lineHeight: '1.1', fontWeight: '700' }],
+        // Client-facing scale
+        'hero': ['48px', { lineHeight: '1.1', fontWeight: '700', letterSpacing: '-0.02em' }],
+        'hostess-name': ['24px', { lineHeight: '1.2', fontWeight: '600' }],
+        'service-title': ['16px', { lineHeight: '1.3', fontWeight: '500' }],
+        'body-large': ['15px', { lineHeight: '1.6', fontWeight: '400' }],
+        'time-slot': ['14px', { lineHeight: '1.2', fontWeight: '500' }],
       },
       keyframes: {
         "accordion-down": {

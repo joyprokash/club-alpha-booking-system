@@ -1,15 +1,470 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import express from "express";
+import bcrypt from "bcrypt";
+import { z } from "zod";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
+import { authenticateToken, requireRole, generateToken, errorHandler, type AuthRequest } from "./middleware";
+import { hasTimeConflict, getDayOfWeek, parseTimeToMinutes, minutesToTime } from "../client/src/lib/time-utils";
+import { insertUserSchema, insertHostessSchema, insertServiceSchema, insertBookingSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  app.use(express.json());
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  // Rate limiters
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { error: { code: "RATE_LIMIT", message: "Too many attempts, please try again later" } },
+  });
+
+  const bookingLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { error: { code: "RATE_LIMIT", message: "Too many booking requests" } },
+  });
+
+  // ==================== AUTH ENDPOINTS ====================
+  
+  // Register (CLIENT only)
+  app.post("/api/auth/register", authLimiter, async (req, res, next) => {
+    try {
+      const { email, password } = insertUserSchema.omit({ passwordHash: true, role: true }).extend({
+        password: z.string().min(8),
+      }).parse(req.body);
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ error: { code: "CONFLICT", message: "User already exists" } });
+      }
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      const user = await storage.createUser({
+        email,
+        passwordHash,
+        role: "CLIENT",
+        forcePasswordReset: false,
+      });
+
+      const token = generateToken(user.id);
+      res.json({ token, user: { ...user, passwordHash: undefined } });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Login
+  app.post("/api/auth/login", authLimiter, async (req, res, next) => {
+    try {
+      const { email, password } = z.object({
+        email: z.string().email(),
+        password: z.string(),
+      }).parse(req.body);
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid credentials" } });
+      }
+
+      const validPassword = await bcrypt.compare(password, user.passwordHash);
+      if (!validPassword) {
+        return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid credentials" } });
+      }
+
+      const token = generateToken(user.id);
+      const userResponse = { ...user, passwordHash: undefined };
+
+      if (user.forcePasswordReset) {
+        return res.json({ token, user: userResponse, requiresPasswordReset: true });
+      }
+
+      res.json({ token, user: userResponse });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Reset Password
+  app.post("/api/auth/reset-password", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const { oldPassword, newPassword } = z.object({
+        oldPassword: z.string(),
+        newPassword: z.string().min(8),
+      }).parse(req.body);
+
+      if (!req.user) {
+        return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Not authenticated" } });
+      }
+
+      const validPassword = await bcrypt.compare(oldPassword, req.user.passwordHash);
+      if (!validPassword) {
+        return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid current password" } });
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      const updated = await storage.updateUser(req.user.id, { passwordHash, forcePasswordReset: false });
+
+      res.json({ user: { ...updated, passwordHash: undefined } });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get current user
+  app.get("/api/auth/me", authenticateToken, async (req: AuthRequest, res) => {
+    if (!req.user) {
+      return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Not authenticated" } });
+    }
+    res.json({ ...req.user, passwordHash: undefined });
+  });
+
+  // Logout (client-side token removal)
+  app.post("/api/auth/logout", (req, res) => {
+    res.json({ success: true });
+  });
+
+  // ==================== HOSTESS ENDPOINTS ====================
+  
+  // Get all hostesses
+  app.get("/api/hostesses", async (req, res, next) => {
+    try {
+      const { location, q } = req.query;
+      const hostesses = await storage.getHostesses(location as string);
+      
+      let filtered = hostesses;
+      if (q) {
+        filtered = hostesses.filter(h => 
+          h.displayName.toLowerCase().includes((q as string).toLowerCase())
+        );
+      }
+
+      res.json(filtered);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get hostess by slug
+  app.get("/api/hostesses/:slug", async (req, res, next) => {
+    try {
+      const { slug } = req.params;
+      const hostess = await storage.getHostessBySlug(slug);
+      
+      if (!hostess) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Hostess not found" } });
+      }
+
+      const withSchedule = await storage.getHostessWithSchedule(hostess.id);
+      res.json(withSchedule);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Create hostess (admin only)
+  app.post("/api/hostesses", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const data = insertHostessSchema.parse(req.body);
+      const hostess = await storage.createHostess(data);
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entity: "hostess",
+        entityId: hostess.id,
+        meta: { data },
+      });
+
+      res.json(hostess);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== SERVICE ENDPOINTS ====================
+  
+  // Get all services
+  app.get("/api/services", async (req, res, next) => {
+    try {
+      const services = await storage.getAllServices();
+      res.json(services);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Create service (admin only)
+  app.post("/api/services", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const data = insertServiceSchema.parse(req.body);
+      const service = await storage.createService(data);
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entity: "service",
+        entityId: service.id,
+        meta: { data },
+      });
+
+      res.json(service);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Update service
+  app.patch("/api/services/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const data = insertServiceSchema.partial().parse(req.body);
+      const service = await storage.updateService(id, data);
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entity: "service",
+        entityId: id,
+        meta: { data },
+      });
+
+      res.json(service);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Delete service
+  app.delete("/api/services/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteService(id);
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entity: "service",
+        entityId: id,
+        meta: {},
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== BOOKING ENDPOINTS ====================
+  
+  // Get bookings for a specific day
+  app.get("/api/bookings/day", authenticateToken, async (req, res, next) => {
+    try {
+      const { date, location } = req.query;
+      if (!date) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Date is required" } });
+      }
+
+      const bookings = await storage.getBookingsByDate(date as string, location as string);
+      res.json(bookings);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get current user's bookings
+  app.get("/api/bookings/my", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Not authenticated" } });
+      }
+
+      const bookings = await storage.getBookingsByClient(req.user.id);
+      res.json(bookings);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get upcoming bookings
+  app.get("/api/bookings/upcoming", authenticateToken, async (req, res, next) => {
+    try {
+      const bookings = await storage.getUpcomingBookings(10);
+      res.json(bookings);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Create booking with conflict detection
+  app.post("/api/bookings", bookingLimiter, authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const schema = insertBookingSchema.extend({
+        clientEmail: z.string().email().optional(),
+      });
+      const data = schema.parse(req.body);
+
+      // Resolve client
+      let clientId = data.clientId;
+      if (data.clientEmail) {
+        let client = await storage.getUserByEmail(data.clientEmail);
+        if (!client) {
+          // Auto-create client if admin/reception is booking
+          if (req.user?.role === "ADMIN" || req.user?.role === "RECEPTION") {
+            const tempPassword = Math.random().toString(36).slice(-10);
+            const passwordHash = await bcrypt.hash(tempPassword, 10);
+            client = await storage.createUser({
+              email: data.clientEmail,
+              passwordHash,
+              role: "CLIENT",
+              forcePasswordReset: true,
+            });
+          } else {
+            return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Client not found" } });
+          }
+        }
+        clientId = client.id;
+      } else if (!clientId) {
+        clientId = req.user?.id;
+      }
+
+      if (!clientId) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Client ID required" } });
+      }
+
+      // Check for conflicts
+      const existingBookings = await storage.getBookingsByDate(data.date);
+      const conflictingBooking = existingBookings.find(b => 
+        b.status !== "CANCELED" &&
+        ((b.hostessId === data.hostessId && hasTimeConflict(data.startTime, data.endTime, b.startTime, b.endTime)) ||
+         (b.clientId === clientId && hasTimeConflict(data.startTime, data.endTime, b.startTime, b.endTime)))
+      );
+
+      if (conflictingBooking) {
+        return res.status(409).json({
+          error: {
+            code: "CONFLICT",
+            message: `Booking conflicts with existing appointment ${minutesToTime(conflictingBooking.startTime)}–${minutesToTime(conflictingBooking.endTime)}`,
+          },
+        });
+      }
+
+      const booking = await storage.createBooking({
+        ...data,
+        clientId,
+        status: data.status || "PENDING",
+      });
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entity: "booking",
+        entityId: booking.id,
+        meta: { data },
+      });
+
+      res.json(booking);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Cancel booking
+  app.post("/api/bookings/:id/cancel", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const booking = await storage.getBookingById(id);
+
+      if (!booking) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Booking not found" } });
+      }
+
+      // Permission check
+      if (req.user?.role === "CLIENT" && booking.clientId !== req.user.id) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Cannot cancel others' bookings" } });
+      }
+
+      const updated = await storage.updateBooking(id, { status: "CANCELED" });
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CANCEL",
+        entity: "booking",
+        entityId: id,
+        meta: {},
+      });
+
+      res.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== ADMIN ENDPOINTS ====================
+  
+  // Get all users (admin only)
+  app.get("/api/admin/users", authenticateToken, requireRole("ADMIN"), async (req, res, next) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users.map(u => ({ ...u, passwordHash: undefined })));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Update user role and hostess link
+  app.patch("/api/admin/users/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const { role, hostessId } = z.object({
+        role: z.enum(["ADMIN", "STAFF", "RECEPTION", "CLIENT"]).optional(),
+        hostessId: z.string().optional().nullable(),
+      }).parse(req.body);
+
+      const updates: any = {};
+      if (role) updates.role = role;
+
+      const user = await storage.updateUser(id, updates);
+
+      // Update hostess link if provided
+      if (hostessId !== undefined && role === "STAFF") {
+        if (hostessId) {
+          await storage.updateHostess(hostessId, { userId: user.id });
+        }
+      }
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entity: "user",
+        entityId: id,
+        meta: { role, hostessId },
+      });
+
+      res.json({ ...user, passwordHash: undefined });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Search clients
+  app.get("/api/clients", authenticateToken, async (req, res, next) => {
+    try {
+      const { q } = req.query;
+      if (!q || (q as string).length < 2) {
+        return res.json([]);
+      }
+
+      const clients = await storage.searchClients(q as string);
+      res.json(clients.map(c => ({ ...c, passwordHash: undefined })));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Error handler
+  app.use(errorHandler);
 
   const httpServer = createServer(app);
-
   return httpServer;
 }
