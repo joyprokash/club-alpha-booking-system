@@ -11,6 +11,7 @@ A production-ready multi-location hostess booking platform with advanced schedul
 - **Time Handling**: date-fns, date-fns-tz (America/Toronto timezone)
 
 ## Recent Changes
+- 2025-10-17: **Streamlined client registration** - Any email address can register without confirmation. Users are automatically logged in after registration and redirected to hostesses page. E2E tests confirmed full booking flow.
 - 2025-10-17: **Homepage with integrated login** - Moved login form directly to homepage underneath logo/header. Users can log in from the main page with demo credentials displayed below. Fixed routing to use reactive location tracking for proper redirects. E2E tests confirmed.
 - 2025-10-17: **Role-based login redirects** - Implemented automatic redirects after login: ADMIN→/admin/dashboard, RECEPTION→/admin/calendar, STAFF→/staff/schedule, CLIENT→/hostesses. E2E tests confirmed all roles redirect correctly.
 - 2025-10-17: **Client booking flow bug fixes** - Fixed critical bugs preventing client bookings: added /my-bookings route, fixed availability query URL construction, made clientId/status optional in validation (derived server-side), added explicit query refetch after booking creation. E2E tests passing.
@@ -51,6 +52,8 @@ A production-ready multi-location hostess booking platform with advanced schedul
 - Simplified interface (no admin tools)
 
 ### CLIENT
+- Register with any email address (no confirmation required)
+- Automatically logged in after registration
 - Browse hostesses by location
 - View hostess profiles with bio, specialties, and schedule
 - Book appointments with real-time availability

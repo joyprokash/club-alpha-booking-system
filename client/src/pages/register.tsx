@@ -44,9 +44,10 @@ export default function Register() {
       await register(data.email, data.password);
       toast({
         title: "Registration successful",
-        description: "Redirecting to login...",
+        description: "Welcome to Club Alpha!",
       });
-      setTimeout(() => setLocation("/login"), 1000);
+      // Redirect to hostesses page (CLIENT default)
+      setLocation("/hostesses");
     } catch (error: any) {
       toast({
         variant: "destructive",
