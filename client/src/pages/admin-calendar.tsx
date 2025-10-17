@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,8 +7,10 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight, MapPin, Clock, User, Mail, FileText, Calendar as CalendarIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { QuickBookingForm } from "@/components/quick-booking-form";
 import { generateTimeSlots, minutesToTime, formatTimeRange, GRID_START_TIME, GRID_END_TIME, SLOT_DURATION, getCurrentDateToronto } from "@/lib/time-utils";
 import type { Hostess, BookingWithDetails } from "@shared/schema";
@@ -17,11 +19,13 @@ export default function AdminCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [quickBookingOpen, setQuickBookingOpen] = useState(false);
+  const [editBookingOpen, setEditBookingOpen] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{
     hostessId: string;
     date: string;
     startTime: number;
   } | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
