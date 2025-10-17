@@ -348,12 +348,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== BOOKING ENDPOINTS ====================
   
+  // Helper: Enforce Reception 14-day history limit
+  function enforceReceptionDateLimit(user: any, dateStr: string): boolean {
+    if (user?.role !== "RECEPTION") return true;
+    
+    const requestedDate = new Date(dateStr);
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+    fourteenDaysAgo.setHours(0, 0, 0, 0);
+    
+    return requestedDate >= fourteenDaysAgo;
+  }
+  
   // Get bookings for a specific day
-  app.get("/api/bookings/day", authenticateToken, async (req, res, next) => {
+  app.get("/api/bookings/day", authenticateToken, async (req: AuthRequest, res, next) => {
     try {
       const { date, location } = req.query;
       if (!date) {
         return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Date is required" } });
+      }
+
+      // Enforce Reception 14-day history limit
+      if (!enforceReceptionDateLimit(req.user, date as string)) {
+        return res.status(403).json({ 
+          error: { 
+            code: "FORBIDDEN", 
+            message: "Reception users can only view bookings from the last 14 days" 
+          } 
+        });
       }
 
       const bookings = await storage.getBookingsByDate(date as string, location as string);
@@ -396,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = schema.parse(req.body);
 
       // Resolve client
-      let clientId = data.clientId;
+      let clientId: string | undefined = data.clientId;
       if (data.clientEmail) {
         let client = await storage.getUserByEmail(data.clientEmail);
         if (!client) {
