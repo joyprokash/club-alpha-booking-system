@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -63,6 +63,7 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
 
 function AppRouter() {
   const { user, isLoading } = useAuth();
+  const [location] = useLocation();
 
   // Determine default route based on user role
   const getDefaultRoute = () => {
@@ -86,7 +87,7 @@ function AppRouter() {
   } as React.CSSProperties;
 
   const needsSidebar = user && ["/admin", "/reception", "/staff"].some(path => 
-    window.location.pathname.startsWith(path)
+    location.startsWith(path)
   );
 
   if (needsSidebar) {
