@@ -98,7 +98,9 @@ function AppRouter() {
     return (
       <SidebarProvider style={sidebarStyle}>
         <div className="flex h-screen w-full">
-          <AppSidebar />
+          <div className="relative z-50">
+            <AppSidebar />
+          </div>
           <div className="flex flex-col flex-1">
             <header className="flex items-center justify-between p-3 border-b bg-card">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
