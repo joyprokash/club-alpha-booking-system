@@ -155,6 +155,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ...req.user, passwordHash: undefined });
   });
 
+  // Alias for /api/auth/me (matches minimal endpoint map spec)
+  app.get("/api/me", authenticateToken, async (req: AuthRequest, res) => {
+    if (!req.user) {
+      return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Not authenticated" } });
+    }
+    res.json({ ...req.user, passwordHash: undefined });
+  });
+
   // Logout (client-side token removal)
   app.post("/api/auth/logout", (req, res) => {
     res.json({ success: true });
