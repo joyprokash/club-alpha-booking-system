@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, FileUp, FileDown, Clock, Settings, MapPin } from "lucide-react";
+import { Calendar, Users, FileUp, FileDown, Clock, Settings, MapPin, QrCode } from "lucide-react";
 import { formatTimeRange, formatDate, getCurrentDateToronto } from "@/lib/time-utils";
 import type { BookingWithDetails } from "@shared/schema";
 
@@ -30,6 +30,14 @@ export default function AdminDashboard() {
     { title: "Block Time Off", icon: Clock, href: "/admin/timeoff" },
     { title: "Services", icon: Settings, href: "/admin/services" },
   ];
+
+  const handleDownloadQR = () => {
+    const clientPortalUrl = `${window.location.origin}/hostesses`;
+    const qrUrl = `/api/qr?url=${encodeURIComponent(clientPortalUrl)}`;
+    
+    // Open in new tab to download
+    window.open(qrUrl, '_blank');
+  };
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -68,8 +76,18 @@ export default function AdminDashboard() {
 
         {/* Quick Actions */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
             <CardTitle>Quick Actions</CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDownloadQR}
+              className="gap-2"
+              data-testid="button-download-qr"
+            >
+              <QrCode className="h-4 w-4" />
+              QR for Client Portal
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
