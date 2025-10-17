@@ -9,7 +9,7 @@ import path from "path";
 import fs from "fs/promises";
 import { storage } from "./storage";
 import { authenticateToken, requireRole, generateToken, errorHandler, type AuthRequest } from "./middleware";
-import { hasTimeConflict, getDayOfWeek, parseTimeToMinutes, minutesToTime } from "../client/src/lib/time-utils";
+import { hasTimeConflict, getDayOfWeek, parseTimeToMinutes, minutesToTime, getCurrentDateToronto } from "../client/src/lib/time-utils";
 import { insertUserSchema, insertHostessSchema, insertServiceSchema, insertBookingSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -486,6 +486,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== STAFF ENDPOINTS ====================
+  
+  // Get staff's linked hostess
+  app.get("/api/staff/hostess", authenticateToken, requireRole("STAFF"), async (req: AuthRequest, res, next) => {
+    try {
+      const hostesses = await storage.getHostesses();
+      const linkedHostess = hostesses.find(h => h.userId === req.user?.id);
+      
+      if (!linkedHostess) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "No linked hostess profile" } });
+      }
+
+      res.json(linkedHostess);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Get staff's today's bookings (for their linked hostess)
+  app.get("/api/staff/bookings/today", authenticateToken, requireRole("STAFF"), async (req: AuthRequest, res, next) => {
+    try {
+      // Find staff's linked hostess
+      const hostesses = await storage.getHostesses();
+      const linkedHostess = hostesses.find(h => h.userId === req.user?.id);
+      
+      if (!linkedHostess) {
+        return res.json([]);
+      }
+
+      const today = getCurrentDateToronto();
+      const allBookings = await storage.getBookingsByDate(today);
+      const staffBookings = allBookings.filter(b => 
+        b.hostessId === linkedHostess.id && b.status !== "CANCELED"
+      );
+
+      res.json(staffBookings);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get staff's upcoming bookings (for their linked hostess)
+  app.get("/api/staff/bookings/upcoming", authenticateToken, requireRole("STAFF"), async (req: AuthRequest, res, next) => {
+    try {
+      // Find staff's linked hostess
+      const hostesses = await storage.getHostesses();
+      const linkedHostess = hostesses.find(h => h.userId === req.user?.id);
+      
+      if (!linkedHostess) {
+        return res.json([]);
+      }
+
+      const allBookings = await storage.getUpcomingBookings(30);
+      const staffBookings = allBookings.filter(b => 
+        b.hostessId === linkedHostess.id && b.status !== "CANCELED"
+      );
+
+      res.json(staffBookings.slice(0, 10));
     } catch (error) {
       next(error);
     }

@@ -59,23 +59,13 @@ export function AppSidebar() {
   const receptionItems = [
     {
       title: "Dashboard",
-      url: "/reception/dashboard",
+      url: "/reception/calendar",
       icon: LayoutDashboard,
     },
     {
-      title: "Calendar",
-      url: "/reception/calendar",
+      title: "Daily Calendar",
+      url: "/admin/calendar",
       icon: Calendar,
-    },
-    {
-      title: "Time Off",
-      url: "/reception/timeoff",
-      icon: Clock,
-    },
-    {
-      title: "Export Schedule",
-      url: "/reception/export",
-      icon: FileDown,
     },
   ];
 

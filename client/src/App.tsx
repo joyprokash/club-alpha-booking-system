@@ -24,6 +24,12 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import AdminCalendar from "@/pages/admin-calendar";
 import AdminServices from "@/pages/admin-services";
 
+// Reception pages
+import ReceptionCalendar from "@/pages/reception-calendar";
+
+// Staff pages
+import StaffSchedule from "@/pages/staff-schedule";
+
 // Shared
 import NotFound from "@/pages/not-found";
 
@@ -104,13 +110,27 @@ function AppRouter() {
                   </ProtectedRoute>
                 </Route>
                 <Route path="/admin/calendar">
-                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
                     <AdminCalendar />
                   </ProtectedRoute>
                 </Route>
                 <Route path="/admin/services">
                   <ProtectedRoute allowedRoles={["ADMIN"]}>
                     <AdminServices />
+                  </ProtectedRoute>
+                </Route>
+
+                {/* Reception routes */}
+                <Route path="/reception/calendar">
+                  <ProtectedRoute allowedRoles={["RECEPTION"]}>
+                    <ReceptionCalendar />
+                  </ProtectedRoute>
+                </Route>
+
+                {/* Staff routes */}
+                <Route path="/staff/schedule">
+                  <ProtectedRoute allowedRoles={["STAFF"]}>
+                    <StaffSchedule />
                   </ProtectedRoute>
                 </Route>
 
