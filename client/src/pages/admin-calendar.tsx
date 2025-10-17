@@ -161,7 +161,7 @@ export default function AdminCalendar() {
           <div className="flex-1 overflow-x-auto">
             <div className="flex min-w-max">
               {sortedHostesses.map((hostess) => (
-                <div key={hostess.id} className="w-52 border-r flex-shrink-0">
+                <div key={hostess.id} className="w-32 border-r flex-shrink-0">
                   {/* Header */}
                   <div className="h-10 border-b bg-card flex items-center justify-between px-2 sticky top-0 z-20">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
