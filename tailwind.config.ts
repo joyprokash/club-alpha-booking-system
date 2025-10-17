@@ -78,6 +78,7 @@ export default {
         // Status colors for booking grid
         available: "hsl(0 0% 100% / <alpha-value>)", // clean white
         booked: "hsl(217 91% 60% / <alpha-value>)", // vibrant blue
+        notes: "hsl(145 65% 50% / <alpha-value>)", // vibrant green for notes added
         "time-off": "hsl(0 84% 60% / <alpha-value>)", // bright red
         "outside-schedule": "hsl(220 10% 18% / <alpha-value>)", // subtle gray
         conflict: "hsl(0 75% 60% / <alpha-value>)", // clear red

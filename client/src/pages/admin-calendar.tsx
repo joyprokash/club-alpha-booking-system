@@ -166,7 +166,23 @@ export default function AdminCalendar() {
           </Select>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          {/* Status Legend */}
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-booked" data-testid="legend-booked" />
+              <span className="text-muted-foreground">Booked</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-notes" data-testid="legend-notes" />
+              <span className="text-muted-foreground">Notes Added</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-time-off" data-testid="legend-timeoff" />
+              <span className="text-muted-foreground">Time Off</span>
+            </div>
+          </div>
+
           <div className="flex items-center gap-1 border rounded-md p-1">
             <Button
               variant="ghost"
@@ -253,17 +269,23 @@ export default function AdminCalendar() {
                   {timeSlots.map((slot) => {
                     const booking = getBookingAtSlot(hostess.id, slot);
                     const isAvailable = !booking;
+                    
+                    // Determine cell color
+                    let cellColor = "bg-card hover:bg-muted/30";
+                    if (!isAvailable) {
+                      if (booking.status === "CANCELED") {
+                        cellColor = "bg-muted";
+                      } else if (booking.notes && booking.notes.trim()) {
+                        cellColor = "bg-notes"; // Green for bookings with notes
+                      } else {
+                        cellColor = "bg-booked"; // Blue for regular bookings
+                      }
+                    }
 
                     return (
                       <div
                         key={slot}
-                        className={`${currentZoom.rowHeight} border-b cursor-pointer transition-colors ${
-                          isAvailable
-                            ? "bg-card hover:bg-muted/30"
-                            : booking.status === "CONFIRMED" || booking.status === "PENDING"
-                            ? "bg-booked"
-                            : "bg-muted"
-                        }`}
+                        className={`${currentZoom.rowHeight} border-b cursor-pointer transition-colors ${cellColor}`}
                         onClick={() => handleCellClick(hostess.id, slot)}
                         data-testid={`cell-${hostess.id}-${slot}`}
                       >
