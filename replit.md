@@ -11,6 +11,8 @@ A production-ready multi-location hostess booking platform with advanced schedul
 - **Time Handling**: date-fns, date-fns-tz (America/Toronto timezone)
 
 ## Recent Changes
+- 2025-10-17: **Bulk user import** - Added CSV upload feature for admins to bulk create users. Supports email, role (ADMIN/STAFF/RECEPTION/CLIENT), and optional password. Auto-generates unique secure passwords if not provided. Shows detailed import results with generated passwords. E2E tests confirmed unique password generation and proper validation.
+- 2025-10-17: **Import/Export schedule fixes** - Fixed authentication token issues (localStorage "auth_token") and response parsing in import/export pages. Both features fully functional and tested.
 - 2025-10-17: **Streamlined client registration** - Any email address can register without confirmation. Users are automatically logged in after registration and redirected to hostesses page. E2E tests confirmed full booking flow.
 - 2025-10-17: **Homepage with integrated login** - Moved login form directly to homepage underneath logo/header. Users can log in from the main page with demo credentials displayed below. Fixed routing to use reactive location tracking for proper redirects. E2E tests confirmed.
 - 2025-10-17: **Role-based login redirects** - Implemented automatic redirects after login: ADMIN→/admin/dashboard, RECEPTION→/admin/calendar, STAFF→/staff/schedule, CLIENT→/hostesses. E2E tests confirmed all roles redirect correctly.
@@ -32,6 +34,7 @@ A production-ready multi-location hostess booking platform with advanced schedul
 - Full access to all features
 - User management and role assignments
 - Hostess ↔ Staff linking
+- Bulk user import (CSV upload with email, role, optional password)
 - Bulk client import
 - Complete calendar view and booking management
 - Import/export schedules
@@ -185,6 +188,7 @@ id,hostess,mon_day,mon_night,tue_day,tue_night,...
 ### Admin
 - GET /api/clients?q= (autocomplete)
 - POST /api/clients/bulk-import (rate-limited, chunked)
+- POST /api/admin/users/bulk-import (CSV upload: email, role, optional password with unique auto-generation)
 - GET /api/admin/users
 - PATCH /api/admin/users/:id (role + hostess link)
 - POST /api/schedule/import
