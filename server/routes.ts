@@ -4,6 +4,9 @@ import express from "express";
 import bcrypt from "bcrypt";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
+import multer from "multer";
+import path from "path";
+import fs from "fs/promises";
 import { storage } from "./storage";
 import { authenticateToken, requireRole, generateToken, errorHandler, type AuthRequest } from "./middleware";
 import { hasTimeConflict, getDayOfWeek, parseTimeToMinutes, minutesToTime } from "../client/src/lib/time-utils";
@@ -11,6 +14,39 @@ import { insertUserSchema, insertHostessSchema, insertServiceSchema, insertBooki
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json());
+
+  // Configure multer for file uploads
+  const uploadStorage = multer.diskStorage({
+    destination: async (req, file, cb) => {
+      const uploadDir = path.join(process.cwd(), "attached_assets", "hostess-photos");
+      try {
+        await fs.mkdir(uploadDir, { recursive: true });
+        cb(null, uploadDir);
+      } catch (error: any) {
+        cb(error, uploadDir);
+      }
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, `hostess-${uniqueSuffix}${ext}`);
+    }
+  });
+
+  const upload = multer({
+    storage: uploadStorage,
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      const allowedMimes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error("Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed."));
+      }
+    }
+  });
 
   // Rate limiters
   const authLimiter = rateLimit({
@@ -181,6 +217,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+
+  // Upload hostess photo (admin/reception)
+  app.post("/api/hostesses/:id/photo", 
+    authenticateToken, 
+    requireRole("ADMIN", "RECEPTION"), 
+    upload.single("photo"),
+    async (req: AuthRequest, res, next) => {
+      try {
+        const { id } = req.params;
+        
+        if (!req.file) {
+          return res.status(400).json({ error: { code: "BAD_REQUEST", message: "No file uploaded" } });
+        }
+
+        // Check if hostess exists before updating
+        const existingHostess = await storage.getHostessById(id);
+        if (!existingHostess) {
+          // Clean up uploaded file if hostess doesn't exist
+          await fs.unlink(req.file.path).catch(() => {});
+          return res.status(404).json({ error: { code: "NOT_FOUND", message: "Hostess not found" } });
+        }
+
+        // Construct public URL for the photo
+        const photoUrl = `/api/assets/hostess-photos/${req.file.filename}`;
+
+        // Update hostess with new photo URL
+        const hostess = await storage.updateHostess(id, { photoUrl });
+
+        // Verify update succeeded
+        if (!hostess) {
+          await fs.unlink(req.file.path).catch(() => {});
+          return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to update hostess" } });
+        }
+
+        await storage.createAuditLog({
+          userId: req.user?.id,
+          action: "UPDATE",
+          entity: "hostess",
+          entityId: id,
+          meta: { photoUrl },
+        });
+
+        res.json({ photoUrl, hostess });
+      } catch (error) {
+        // Clean up uploaded file if database update fails
+        if (req.file) {
+          await fs.unlink(req.file.path).catch(() => {});
+        }
+        next(error);
+      }
+    }
+  );
+
+  // Serve hostess photos
+  app.use("/api/assets/hostess-photos", express.static(path.join(process.cwd(), "attached_assets", "hostess-photos")));
 
   // ==================== SERVICE ENDPOINTS ====================
   

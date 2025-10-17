@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, MapPin } from "lucide-react";
+import { Plus, MapPin, Upload } from "lucide-react";
 import type { Hostess } from "@shared/schema";
 
 const hostessSchema = z.object({
@@ -31,6 +31,9 @@ type HostessFormData = z.infer<typeof hostessSchema>;
 export default function AdminHostesses() {
   const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [uploadHostessId, setUploadHostessId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { data: hostesses, isLoading } = useQuery<Hostess[]>({
     queryKey: ["/api/hostesses"],
@@ -57,6 +60,61 @@ export default function AdminHostesses() {
       });
     },
   });
+
+  const uploadPhotoMutation = useMutation({
+    mutationFn: async ({ hostessId, file }: { hostessId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append("photo", file);
+      
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/hostesses/${hostessId}/photo`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || "Upload failed");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/hostesses"] });
+      toast({ title: "Photo uploaded successfully" });
+      setUploadHostessId(null);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to upload photo",
+        description: error.message,
+      });
+    },
+  });
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpload = () => {
+    if (uploadHostessId && selectedFile) {
+      uploadPhotoMutation.mutate({ hostessId: uploadHostessId, file: selectedFile });
+    }
+  };
 
   const form = useForm<HostessFormData>({
     resolver: zodResolver(hostessSchema),
@@ -203,6 +261,7 @@ export default function AdminHostesses() {
                     <TableHead>Location</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Specialties</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -242,6 +301,17 @@ export default function AdminHostesses() {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setUploadHostessId(hostess.id)}
+                          data-testid={`button-upload-photo-${hostess.id}`}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload Photo
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -249,6 +319,59 @@ export default function AdminHostesses() {
             )}
           </CardContent>
         </Card>
+
+        {/* Photo Upload Dialog */}
+        <Dialog open={!!uploadHostessId} onOpenChange={(open) => !open && setUploadHostessId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Upload Hostess Photo</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-4">
+                {previewUrl ? (
+                  <Avatar className="h-32 w-32">
+                    <AvatarImage src={previewUrl} />
+                  </Avatar>
+                ) : (
+                  <div className="h-32 w-32 rounded-full bg-muted flex items-center justify-center">
+                    <Upload className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                )}
+                <Input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleFileSelect}
+                  data-testid="input-photo-file"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Maximum file size: 5MB. Supported formats: JPEG, PNG, WebP, GIF
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1"
+                  variant="outline"
+                  onClick={() => {
+                    setUploadHostessId(null);
+                    setSelectedFile(null);
+                    setPreviewUrl(null);
+                  }}
+                  data-testid="button-cancel-upload"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={handleUpload}
+                  disabled={!selectedFile || uploadPhotoMutation.isPending}
+                  data-testid="button-confirm-upload"
+                >
+                  {uploadPhotoMutation.isPending ? "Uploading..." : "Upload"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
