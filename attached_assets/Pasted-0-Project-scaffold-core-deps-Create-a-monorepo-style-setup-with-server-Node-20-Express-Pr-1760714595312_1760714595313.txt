@@ -1,0 +1,248 @@
+0) Project scaffold & core deps
+
+“Create a monorepo style setup with:
+
+server/ (Node 20, Express, Prisma, Zod, JWT, bcrypt, date-fns, cors)
+
+web/ (Vite + React + React Router + TanStack Query)
+
+Use Postgres via Supabase. Add .env with DATABASE_URL, JWT_SECRET, APP_TZ=America/Toronto.
+
+Initialize Prisma with a Postgres datasource and run an initial migration.
+
+Add ESLint + Prettier and basic scripts: dev, build, start.
+Explain how to run both dev servers concurrently.”
+
+1) Database schema (covers Base44 entities & quirks)
+
+“Define a Prisma schema for:
+
+User { id, email (unique), password_hash, role enum: ADMIN | STAFF | RECEPTION | CLIENT, createdAt }
+
+Hostess { id, slug, displayName, bio, specialties, location enum: DOWNTOWN | WEST_END, photoUrl, active boolean, userId? (link to staff user), createdAt }
+
+Service { id, name, durationMin (int), priceCents }
+
+Booking { id, date (date only), startTime (minutes from midnight), endTime (minutes), hostessId → Hostess, clientId → User, serviceId → Service, status enum: PENDING | CONFIRMED | COMPLETED | CANCELED, notes, createdAt }
+
+TimeOff { id, hostessId, date, startTime, endTime, reason }
+
+WeeklySchedule { id, hostessId, weekday int (0=Sun..6=Sat), startTimeDay, endTimeDay, startTimeNight, endTimeNight } // supports day/night split like your Excel
+
+AuditLog { id, userId?, action, entity, entityId, meta JSON, createdAt }
+Add indexes: bookings (hostessId, date), (clientId, date). Migrate.”
+
+2) Auth & roles
+
+“Implement JWT auth with:
+
+/api/auth/register (CLIENT only), /api/auth/login, /api/auth/me.
+
+Admin endpoint to create STAFF/RECEPTION users.
+
+Middleware requireRole(...roles); block by default.
+
+Password: bcrypt hash. Add ‘forcePasswordReset’ boolean on User for bulk-imported users; if true, /auth/login returns a flag, and /auth/reset-password handles first-login change.”
+
+3) Time handling (24-hour, Toronto)
+
+“Centralize time utils:
+
+Store times as minutes from midnight.
+
+Always display 24-hour format.
+
+Default timezone America/Toronto.
+Create helpers: parse HH:mm ↔ minutes, slot iteration in 15-min steps, overlap check.”
+
+4) Double-booking prevention (hostess & client)
+
+“Build booking validation:
+
+For new/updated bookings, ensure entire duration has no overlap with existing bookings (ignore CANCELED).
+
+Also prevent the same client from overlapping elsewhere.
+
+Respect TimeOff.
+
+Respect WeeklySchedule bounds.
+
+Use a serializable transaction + unique mutex on (hostessId, date, startTime) to avoid race conditions.
+Return clear errors (e.g., ‘Overlaps 10:30–11:15’). Add tests.”
+
+5) Admin Daily Grid (10:00–23:00, 15-min slots, horizontal scroll)
+
+“Create /calendar/day for admins/reception:
+
+Left column: times 10:00–23:00 in 15-min increments with ranges (‘13:00–13:15’).
+
+Columns: hostesses (compact headers with photo + FirstName-L).
+
+Sticky header/time column, vertical & horizontal scroll, fits 8 hostesses before scrolling.
+
+Cells colored: available, booked, time-off, outside schedule.
+
+Click available cell ⇒ open ‘Quick Booking’ modal with pre-filled date/time/hostess/location; pick client (autocomplete), service, notes; submit and refresh grid.
+
+Everything in 24-hour format.”
+
+6) Client booking flow + service ordering
+
+“Client-facing pages:
+
+/hostesses grid (filter by location); sort alphabetically; guards for null.
+
+/hostess/:slug profile: photo upload (admin/reception only), bio, specialties, weekly schedule, bookable date picker showing available 15-min slots derived from weekly schedule + bookings + time-off.
+
+Services listed ascending by duration (30 → … → 120). Handle missing durations gracefully.
+
+Booking form collects name + email only (no phone), supports client autocomplete when admin books.”
+
+7) Import (Excel/CSV) weekly schedules (Downtown / West End)
+
+“Create /admin/import-schedule:
+
+Upload CSV with columns: id,hostess,mon_day,mon_night,tue_day,tue_night,wed_day,wed_night,thu_day,thu_night,fri_day,fri_night,sat_day,sat_night,sun_day,sun_night
+
+Time values like 10:00-18:00,W or 12:00-20:00,D; blank = off.
+
+Parse safely (ignore quotes, trim spaces, 24-hour).
+
+Idempotent upsert into WeeklySchedule.
+
+Progress UI with success/fail rows; capture errors (bad time string, unknown hostess).
+
+DO NOT batch spam DB: process sequentially with small delay; show ETA.”
+
+8) Export to WordPress format (for both locations)
+
+“Create /admin/export-schedule:
+
+Generate CSV in exact WordPress format above (day/night columns).
+
+Rows ordered alphabetically by hostess.
+
+Each cell shows HH:mm-HH:mm (24-hour), no quotes. Append ,D or ,W.
+
+Location switch: export Downtown or West End only.
+
+Handle null times by leaving the cell empty. Never crash on missing fields.”
+
+9) Reception role permissions (2-week history max)
+
+“Create role matrix:
+
+RECEPTION can: view calendar, create bookings, cancel future bookings, edit weekly schedules, block time off, export schedule, view only last 14 days of history. Can NOT delete entities, can NOT edit past bookings, can NOT run bulk delete, can NOT manage users.
+
+Enforce via middleware and service-layer checks. Hide restricted UI. Add server-side filters that clamp queries to date >= today-14d for reception.”
+
+10) Admin tools & safety
+
+“Admin dashboard cards:
+
+Today’s appts by location, upcoming appts list with location badges.
+
+Quick actions: Import/Export schedules, Block Time Off, Manage Users, Services CRUD.
+
+AuditLog write on create/update/cancel actions with user id and payload snapshot.”
+
+11) Hostess ↔ Staff linking workflow
+
+“On /admin/users:
+
+Change role (CLIENT/STAFF/RECEPTION/ADMIN).
+
+If role=STAFF, show drop-down to link to a Hostess profile by name; prevent multi-link; allow unlink.
+
+When a STAFF logs in, redirect to /calendar/day filtered to themselves and show ‘Your appointments today / upcoming’ panels.”
+
+12) Bulk client import (14,000 emails) with forced password change
+
+“Add /admin/bulk-import-clients:
+
+Upload CSV with email,name?.
+
+Create User with role=CLIENT, random temp password (server-generated) OR set a default and immediately set forcePasswordReset=true.
+
+On login, if forcePasswordReset, block app usage until /auth/reset-password completes.
+
+Rate-limit the endpoint, chunk insert in transactions, dedupe by email, idempotent re-runs.”
+
+13) Error handling & null guards
+
+“Global error middleware returning { error: { code, message, details? } }.
+
+All list queries must guard against null strings when sorting (localeCompare safe fallback).
+
+Add Zod validation for all payloads. Return 400 with human-readable messages.
+
+Front-end shows toast errors and disables double submits with loading states.”
+
+14) Booking overlap rules (hard truth version)
+
+“Implement a pure function hasConflict({ startA, endA }, { startB, endB }) and use it everywhere. A booking is valid only if it does not overlap any non-canceled booking and fits within WeeklySchedule + TimeOff. Add unit tests covering:
+
+Edge touch (end == start) OK.
+
+Full containment and partial overlaps blocked.
+
+Cross-hour overlaps and 15-min grid correctness.”
+
+15) Rate-limits & concurrency
+
+“Protect hotspot endpoints (/bookings, /import-schedule, /bulk-import-clients) with:
+
+IP + user rate-limit.
+
+DB transaction + advisory lock per (hostessId, date) on booking create/update.
+
+Return 409 CONFLICT on racing attempts.”
+
+16) QR codes & links
+
+“Add a tiny utility endpoint to return a PNG QR code for any URL (uses qrcode npm). Admin UI button: ‘Download QR for Client Portal’.”
+
+17) Testing seeds & fixtures
+
+“Create seed script:
+
+10 services (30,45,60,75,90,105,120 mins).
+
+20 hostesses across both locations with weekly schedules.
+
+50 clients.
+
+A few random bookings/time-off.
+Add npm run seed. Provide example .csv files for import/export.”
+
+18) CI sanity (optional but smart)
+
+“Add a GitHub Action (or Replit Nix runner) to run prisma migrate diff, npm test, and a quick TypeScript build to block broken pushes.”
+
+Minimal endpoint map (for you/AI to implement)
+
+POST /api/auth/register (client) | POST /api/auth/login | POST /api/auth/reset-password
+
+GET /api/me
+
+GET /api/hostesses?location=&q= | GET /api/hostesses/:slug
+
+POST /api/hostesses/:id/photo (admin/reception)
+
+GET /api/services (sorted asc by durationMin)
+
+GET /api/bookings/day?date=YYYY-MM-DD&location= (grid data)
+
+POST /api/bookings (with full validation)
+
+POST /api/bookings/:id/cancel (role rules)
+
+POST /api/timeoff (admin/reception)
+
+POST /api/schedule/import | GET /api/schedule/export?location=
+
+GET /api/clients?q= | POST /api/clients/bulk-import
+
+GET /api/admin/users | PATCH /api/admin/users/:id (role/link hostess)
+
+GET /api/qr?url=...
