@@ -246,6 +246,78 @@ export function registerExtendedRoutes(app: Express) {
     }
   });
 
+  // ==================== BULK USER IMPORT ====================
+  
+  app.post("/api/admin/users/bulk-import", importLimiter, authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { csvData } = z.object({ csvData: z.string() }).parse(req.body);
+      
+      const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true });
+      const results: any[] = [];
+
+      for (const row of parsed.data as any[]) {
+        try {
+          const email = row.email?.trim();
+          const role = row.role?.trim().toUpperCase() || "CLIENT";
+          // Generate unique password for each user if not provided
+          const password = row.password?.trim() || Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-8);
+
+          // Validate email
+          if (!email || !email.includes("@")) {
+            results.push({ row, success: false, error: "Invalid email" });
+            continue;
+          }
+
+          // Validate role
+          if (!["ADMIN", "STAFF", "RECEPTION", "CLIENT"].includes(role)) {
+            results.push({ row, success: false, error: `Invalid role: ${role}. Must be ADMIN, STAFF, RECEPTION, or CLIENT` });
+            continue;
+          }
+
+          // Check if user already exists
+          const existing = await storage.getUserByEmail(email);
+          if (existing) {
+            results.push({ row, success: false, error: "User already exists" });
+            continue;
+          }
+
+          // Hash password
+          const passwordHash = await bcrypt.hash(password, 10);
+
+          // Create user
+          await storage.createUser({
+            email,
+            passwordHash,
+            role: role as "ADMIN" | "STAFF" | "RECEPTION" | "CLIENT",
+            forcePasswordReset: !row.password, // Force reset if password was auto-generated
+          });
+
+          results.push({ row, success: true, generatedPassword: !row.password ? password : undefined });
+        } catch (error: any) {
+          results.push({ row, success: false, error: error.message });
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "BULK_IMPORT",
+        entity: "user",
+        entityId: "bulk",
+        meta: { results, count: results.filter(r => r.success).length },
+      });
+
+      res.json({ 
+        results, 
+        total: results.length, 
+        imported: results.filter(r => r.success).length 
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // ==================== AVAILABILITY ENDPOINT ====================
   
   app.get("/api/bookings/availability", async (req, res, next) => {

@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { UserCog } from "lucide-react";
+import { UserCog, FileUp, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import type { User, Hostess } from "@shared/schema";
 
 export default function AdminUsers() {
@@ -16,6 +18,8 @@ export default function AdminUsers() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedHostess, setSelectedHostess] = useState<string>("");
+  const [csvData, setCsvData] = useState("");
+  const [importResults, setImportResults] = useState<any>(null);
 
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -44,6 +48,32 @@ export default function AdminUsers() {
     },
   });
 
+  const bulkImportMutation = useMutation({
+    mutationFn: async (data: string) => {
+      const response = await apiRequest("POST", "/api/admin/users/bulk-import", { csvData: data });
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      setImportResults(data);
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      
+      const successCount = data.results.filter((r: any) => r.success).length;
+      const failCount = data.results.filter((r: any) => !r.success).length;
+      
+      toast({
+        title: "Import completed",
+        description: `${successCount} users created, ${failCount} failed`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Import failed",
+        description: error.message,
+      });
+    },
+  });
+
   const handleUpdate = () => {
     if (!editingUser || !selectedRole) return;
     
@@ -52,6 +82,31 @@ export default function AdminUsers() {
       role: selectedRole,
       hostessId: selectedRole === "STAFF" ? selectedHostess || undefined : undefined,
     });
+  };
+
+  const handleBulkImport = () => {
+    if (!csvData.trim()) {
+      toast({
+        variant: "destructive",
+        title: "No CSV data",
+        description: "Please paste CSV data to import",
+      });
+      return;
+    }
+    setImportResults(null);
+    bulkImportMutation.mutate(csvData);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        setCsvData(text);
+      };
+      reader.readAsText(file);
+    }
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -72,6 +127,105 @@ export default function AdminUsers() {
           <h1 className="text-section-title font-semibold">User Management</h1>
           <p className="text-muted-foreground">Manage user roles and permissions</p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Bulk Import Users</CardTitle>
+            <CardDescription>Upload a CSV file to create multiple users at once</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>CSV Format:</strong> email,role,password (password is optional)
+                <br />
+                <strong>Example:</strong> user@example.com,CLIENT,mypassword123
+                <br />
+                <strong>Roles:</strong> ADMIN, STAFF, RECEPTION, CLIENT
+              </AlertDescription>
+            </Alert>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Upload CSV File</label>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileUpload}
+                className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                data-testid="input-csv-file"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Or Paste CSV Data</label>
+              <Textarea
+                value={csvData}
+                onChange={(e) => setCsvData(e.target.value)}
+                placeholder="email,role,password&#10;user1@example.com,CLIENT&#10;user2@example.com,STAFF,password123"
+                rows={6}
+                className="font-mono text-xs"
+                data-testid="textarea-csv"
+              />
+            </div>
+
+            <Button
+              onClick={handleBulkImport}
+              disabled={bulkImportMutation.isPending || !csvData.trim()}
+              className="w-full"
+              data-testid="button-import-users"
+            >
+              <FileUp className="h-4 w-4 mr-2" />
+              {bulkImportMutation.isPending ? "Importing..." : "Import Users"}
+            </Button>
+
+            {importResults && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Import Results</CardTitle>
+                  <CardDescription>
+                    {importResults.imported} of {importResults.total} users imported successfully
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {importResults.results.map((result: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className={`flex items-start gap-2 p-3 rounded-md ${
+                          result.success ? "bg-green-50 dark:bg-green-950" : "bg-red-50 dark:bg-red-950"
+                        }`}
+                        data-testid={`result-${idx}`}
+                      >
+                        {result.success ? (
+                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                        )}
+                        <div className="flex-1 text-sm">
+                          <div className="font-medium">{result.row.email}</div>
+                          {result.success ? (
+                            <>
+                              <div className="text-muted-foreground">
+                                Role: {result.row.role || "CLIENT"}
+                              </div>
+                              {result.generatedPassword && (
+                                <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                                  Generated password: <code className="bg-background px-1 rounded">{result.generatedPassword}</code>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="text-red-600 dark:text-red-400">{result.error}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
