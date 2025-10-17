@@ -12,7 +12,17 @@ export default function ReceptionCalendar() {
   const today = getCurrentDateToronto();
 
   const { data: todaysBookings } = useQuery<BookingWithDetails[]>({
-    queryKey: ["/api/bookings/day", { date: today }],
+    queryKey: ["/api/bookings/day", today],
+    queryFn: async () => {
+      const token = localStorage.getItem("auth_token");
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      const res = await fetch(`/api/bookings/day?date=${today}`, { headers, credentials: "include" });
+      if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+      return res.json();
+    },
   });
 
   const { data: upcomingBookings } = useQuery<BookingWithDetails[]>({
