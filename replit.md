@@ -1,4 +1,4 @@
-# Base44 Booking Platform
+# Club Alpha Booking Platform
 
 ## Overview
 A production-ready multi-location hostess booking platform with advanced scheduling, role-based access control, and comprehensive admin tools. Built for managing appointments across Downtown and West End locations with real-time conflict detection and double-booking prevention.

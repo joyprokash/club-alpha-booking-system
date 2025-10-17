@@ -1,4 +1,4 @@
-# Base44 Booking Platform - Design Guidelines
+# Club Alpha Booking Platform - Design Guidelines
 
 ## Design Approach
 **Selected Framework:** Design System Approach (Carbon Design + Material Design hybrid)
