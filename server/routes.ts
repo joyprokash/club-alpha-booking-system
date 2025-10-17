@@ -460,6 +460,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update booking notes (clients can update their own)
+  app.patch("/api/bookings/:id/notes", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const { notes } = z.object({ notes: z.string() }).parse(req.body);
+
+      const booking = await storage.getBookingById(id);
+
+      if (!booking) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Booking not found" } });
+      }
+
+      // Permission check - only client can update their own booking notes
+      if (req.user?.role === "CLIENT" && booking.clientId !== req.user.id) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Cannot update others' bookings" } });
+      }
+
+      const updated = await storage.updateBooking(id, { notes });
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entity: "booking",
+        entityId: id,
+        meta: { notes },
+      });
+
+      res.json(updated);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Cancel booking
   app.post("/api/bookings/:id/cancel", authenticateToken, async (req: AuthRequest, res, next) => {
     try {
@@ -549,6 +582,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       res.json(staffBookings.slice(0, 10));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== ANALYTICS ENDPOINTS ====================
+  
+  // Get revenue analytics
+  app.get("/api/analytics/revenue", authenticateToken, requireRole("ADMIN"), async (req, res, next) => {
+    try {
+      const { startDate, endDate, groupBy = "hostess" } = req.query;
+      
+      const allBookings = await storage.getAllBookings();
+      let filteredBookings = allBookings.filter(b => b.status === "CONFIRMED" || b.status === "COMPLETED");
+
+      // Apply date filters if provided
+      if (startDate) {
+        filteredBookings = filteredBookings.filter(b => b.date >= (startDate as string));
+      }
+      if (endDate) {
+        filteredBookings = filteredBookings.filter(b => b.date <= (endDate as string));
+      }
+
+      // Group revenue
+      if (groupBy === "hostess") {
+        const revenueByHostess = filteredBookings.reduce((acc, booking) => {
+          const hostessName = booking.hostess.displayName;
+          if (!acc[hostessName]) {
+            acc[hostessName] = { name: hostessName, revenue: 0, bookings: 0 };
+          }
+          acc[hostessName].revenue += booking.service.priceCents;
+          acc[hostessName].bookings += 1;
+          return acc;
+        }, {} as Record<string, { name: string; revenue: number; bookings: number }>);
+
+        res.json(Object.values(revenueByHostess));
+      } else if (groupBy === "location") {
+        const revenueByLocation = filteredBookings.reduce((acc, booking) => {
+          const location = booking.hostess.location;
+          if (!acc[location]) {
+            acc[location] = { name: location, revenue: 0, bookings: 0 };
+          }
+          acc[location].revenue += booking.service.priceCents;
+          acc[location].bookings += 1;
+          return acc;
+        }, {} as Record<string, { name: string; revenue: number; bookings: number }>);
+
+        res.json(Object.values(revenueByLocation));
+      } else if (groupBy === "service") {
+        const revenueByService = filteredBookings.reduce((acc, booking) => {
+          const serviceName = booking.service.name;
+          if (!acc[serviceName]) {
+            acc[serviceName] = { name: serviceName, revenue: 0, bookings: 0 };
+          }
+          acc[serviceName].revenue += booking.service.priceCents;
+          acc[serviceName].bookings += 1;
+          return acc;
+        }, {} as Record<string, { name: string; revenue: number; bookings: number }>);
+
+        res.json(Object.values(revenueByService));
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get bookings trend over time
+  app.get("/api/analytics/bookings-trend", authenticateToken, requireRole("ADMIN"), async (req, res, next) => {
+    try {
+      const { days = 30 } = req.query;
+      const allBookings = await storage.getAllBookings();
+      
+      // Get bookings from last N days
+      const today = new Date();
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - Number(days));
+
+      const trendData = allBookings
+        .filter(b => new Date(b.date) >= startDate)
+        .reduce((acc, booking) => {
+          if (!acc[booking.date]) {
+            acc[booking.date] = { date: booking.date, bookings: 0, confirmed: 0, cancelled: 0 };
+          }
+          acc[booking.date].bookings += 1;
+          if (booking.status === "CONFIRMED" || booking.status === "COMPLETED") {
+            acc[booking.date].confirmed += 1;
+          } else if (booking.status === "CANCELED") {
+            acc[booking.date].cancelled += 1;
+          }
+          return acc;
+        }, {} as Record<string, { date: string; bookings: number; confirmed: number; cancelled: number }>);
+
+      res.json(Object.values(trendData).sort((a, b) => a.date.localeCompare(b.date)));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get cancellation analytics
+  app.get("/api/analytics/cancellations", authenticateToken, requireRole("ADMIN"), async (req, res, next) => {
+    try {
+      const allBookings = await storage.getAllBookings();
+      
+      const total = allBookings.length;
+      const cancelled = allBookings.filter(b => b.status === "CANCELED").length;
+      const confirmed = allBookings.filter(b => b.status === "CONFIRMED" || b.status === "COMPLETED").length;
+      const pending = allBookings.filter(b => b.status === "PENDING").length;
+
+      const cancellationRate = total > 0 ? ((cancelled / total) * 100).toFixed(2) : "0.00";
+
+      res.json({
+        total,
+        cancelled,
+        confirmed,
+        pending,
+        cancellationRate: parseFloat(cancellationRate),
+      });
     } catch (error) {
       next(error);
     }

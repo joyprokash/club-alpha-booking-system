@@ -57,6 +57,7 @@ export interface IStorage {
   getBookingsByDate(date: string, location?: string): Promise<BookingWithDetails[]>;
   getBookingsByClient(clientId: string): Promise<BookingWithDetails[]>;
   getUpcomingBookings(limit?: number): Promise<BookingWithDetails[]>;
+  getAllBookings(): Promise<BookingWithDetails[]>;
   createBooking(booking: InsertBooking): Promise<Booking>;
   updateBooking(id: string, data: Partial<Booking>): Promise<Booking>;
 
@@ -250,6 +251,25 @@ export class DbStorage implements IStorage {
       .where(gte(bookings.date, today))
       .orderBy(asc(bookings.date), asc(bookings.startTime))
       .limit(limit);
+
+    return result
+      .filter(r => r.hostesses && r.users && r.services)
+      .map(r => ({
+        ...r.bookings,
+        hostess: r.hostesses!,
+        client: r.users!,
+        service: r.services!,
+      }));
+  }
+
+  async getAllBookings(): Promise<BookingWithDetails[]> {
+    const result = await db
+      .select()
+      .from(bookings)
+      .leftJoin(hostesses, eq(bookings.hostessId, hostesses.id))
+      .leftJoin(users, eq(bookings.clientId, users.id))
+      .leftJoin(services, eq(bookings.serviceId, services.id))
+      .orderBy(asc(bookings.date), asc(bookings.startTime));
 
     return result
       .filter(r => r.hostesses && r.users && r.services)
