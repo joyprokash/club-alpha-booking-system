@@ -76,7 +76,7 @@ export default function AdminCalendar() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="font-mono text-sm min-w-32 text-center">
+            <span className="text-sm min-w-32 text-center">
               {format(selectedDate, "MMM d, yyyy")}
             </span>
             <Button
@@ -119,12 +119,12 @@ export default function AdminCalendar() {
       <div className="flex-1 overflow-hidden">
         <div className="flex h-full">
           {/* Time Column */}
-          <div className="w-20 flex-shrink-0 border-r bg-muted/30 sticky left-0 z-10">
+          <div className="w-20 flex-shrink-0 border-r bg-muted/30 sticky left-0 z-30">
             <div className="h-14 border-b bg-card" />
             {timeSlots.map((slot) => (
               <div
                 key={slot}
-                className="h-12 border-b flex items-center justify-center font-mono text-time-label text-muted-foreground"
+                className="h-12 border-b flex items-center justify-center text-time-label text-muted-foreground"
               >
                 {formatTimeRange(slot, slot + SLOT_DURATION)}
               </div>
