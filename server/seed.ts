@@ -22,7 +22,7 @@ async function seed() {
     console.log("👤 Creating admin user...");
     const adminPassword = await bcrypt.hash("admin123", SALT_ROUNDS);
     const [adminUser] = await db.insert(users).values({
-      email: "admin@base44.com",
+      email: "admin@clubalpha.ca",
       passwordHash: adminPassword,
       role: "ADMIN",
       forcePasswordReset: false,
@@ -33,7 +33,7 @@ async function seed() {
     console.log("👤 Creating reception user...");
     const receptionPassword = await bcrypt.hash("reception123", SALT_ROUNDS);
     const [receptionUser] = await db.insert(users).values({
-      email: "reception@base44.com",
+      email: "reception@clubalpha.ca",
       passwordHash: receptionPassword,
       role: "RECEPTION",
       forcePasswordReset: false,
@@ -232,8 +232,8 @@ async function seed() {
 
     console.log("\n✅ Seed completed successfully!\n");
     console.log("📋 Summary:");
-    console.log(`   - 1 Admin user (admin@base44.com / admin123)`);
-    console.log(`   - 1 Reception user (reception@base44.com / reception123)`);
+    console.log(`   - 1 Admin user (admin@clubalpha.ca / admin123)`);
+    console.log(`   - 1 Reception user (reception@clubalpha.ca / reception123)`);
     console.log(`   - ${createdServices.length} Services`);
     console.log(`   - ${createdHostesses.length} Hostesses`);
     console.log(`   - ${scheduleData.length} Weekly Schedule Entries`);

@@ -223,8 +223,8 @@ npm start
 
 ### Seed Data
 The database can be seeded with comprehensive sample data using `server/seed.ts`:
-- **Admin user**: admin@base44.com / admin123
-- **Reception user**: reception@base44.com / reception123
+- **Admin user**: admin@clubalpha.ca / admin123
+- **Reception user**: reception@clubalpha.ca / reception123
 - **10 Services**: Ranging from 15-min Express Session ($30) to 6-hour Full Day Experience ($600)
 - **20 Hostesses**: 10 Downtown, 10 West End with unique bios and specialties
 - **120 Weekly Schedules**: Mon-Fri 10:00-18:00 (day) + 19:00-23:00 (night), Sat 12:00-20:00 (day only)

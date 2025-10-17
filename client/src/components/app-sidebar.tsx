@@ -153,7 +153,13 @@ export function AppSidebar() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <button onClick={() => logout()} data-testid="button-logout">
+                <button 
+                  onClick={async () => {
+                    await logout();
+                    window.location.href = "/";
+                  }} 
+                  data-testid="button-logout"
+                >
                   <LogOut className="h-4 w-4" />
                   <span>Logout</span>
                 </button>

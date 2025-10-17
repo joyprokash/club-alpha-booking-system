@@ -24,7 +24,7 @@ const loginCredentials = [
   {
     role: "ADMIN",
     icon: Lock,
-    email: "admin@base44.com",
+    email: "admin@clubalpha.ca",
     password: "admin123",
     description: "Full platform access, analytics, user management",
     color: "text-red-500",
@@ -32,7 +32,7 @@ const loginCredentials = [
   {
     role: "RECEPTION",
     icon: Calendar,
-    email: "reception@base44.com",
+    email: "reception@clubalpha.ca",
     password: "reception123",
     description: "Calendar view, create bookings, manage schedules",
     color: "text-blue-500",
