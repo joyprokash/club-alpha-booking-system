@@ -205,9 +205,7 @@ export default function AdminCalendar() {
               <SelectItem value="WEST_END">West End</SelectItem>
             </SelectContent>
           </Select>
-        </div>
 
-        <div className="flex items-center gap-4">
           {/* Status Legend */}
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1.5">
@@ -223,7 +221,9 @@ export default function AdminCalendar() {
               <span className="text-muted-foreground">Time Off</span>
             </div>
           </div>
+        </div>
 
+        <div className="flex items-center gap-4">
           <div className="flex items-center gap-1 border rounded-md p-1">
             <Button
               variant="ghost"
