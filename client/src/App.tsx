@@ -24,6 +24,10 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import AdminCalendar from "@/pages/admin-calendar";
 import AdminServices from "@/pages/admin-services";
 import AdminAnalytics from "@/pages/admin-analytics";
+import AdminImport from "@/pages/admin-import";
+import AdminExport from "@/pages/admin-export";
+import AdminUsers from "@/pages/admin-users";
+import AdminHostesses from "@/pages/admin-hostesses";
 
 // Reception pages
 import ReceptionCalendar from "@/pages/reception-calendar";
@@ -125,6 +129,26 @@ function AppRouter() {
                 <Route path="/admin/analytics">
                   <ProtectedRoute allowedRoles={["ADMIN"]}>
                     <AdminAnalytics />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/admin/users">
+                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminUsers />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/admin/hostesses">
+                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminHostesses />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/admin/import">
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
+                    <AdminImport />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/admin/export">
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
+                    <AdminExport />
                   </ProtectedRoute>
                 </Route>
 
