@@ -8,18 +8,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, MapPin, Clock, User, Mail, FileText, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Clock, User, Mail, FileText, Calendar as CalendarIcon, ZoomIn, ZoomOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { QuickBookingForm } from "@/components/quick-booking-form";
 import { generateTimeSlots, minutesToTime, formatTimeRange, GRID_START_TIME, GRID_END_TIME, SLOT_DURATION, getCurrentDateToronto } from "@/lib/time-utils";
 import type { Hostess, BookingWithDetails } from "@shared/schema";
 
+type ZoomLevel = "compact" | "normal" | "comfortable";
+
 export default function AdminCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [quickBookingOpen, setQuickBookingOpen] = useState(false);
   const [editBookingOpen, setEditBookingOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<ZoomLevel>("compact");
   const [selectedSlot, setSelectedSlot] = useState<{
     hostessId: string;
     date: string;
@@ -46,6 +49,36 @@ export default function AdminCalendar() {
   ) || [];
 
   const timeSlots = generateTimeSlots(GRID_START_TIME, GRID_END_TIME, SLOT_DURATION);
+
+  // Zoom level configurations
+  const zoomConfig = {
+    compact: {
+      rowHeight: "h-6",
+      headerHeight: "h-10",
+      columnWidth: "w-32",
+      avatarSize: "h-6 w-6",
+      textSize: "text-xs",
+      badgeHeight: "h-5",
+    },
+    normal: {
+      rowHeight: "h-10",
+      headerHeight: "h-14",
+      columnWidth: "w-44",
+      avatarSize: "h-8 w-8",
+      textSize: "text-sm",
+      badgeHeight: "h-6",
+    },
+    comfortable: {
+      rowHeight: "h-14",
+      headerHeight: "h-16",
+      columnWidth: "w-56",
+      avatarSize: "h-10 w-10",
+      textSize: "text-base",
+      badgeHeight: "h-7",
+    },
+  };
+
+  const currentZoom = zoomConfig[zoomLevel];
 
   const getBookingAtSlot = (hostessId: string, startTime: number) => {
     return bookings?.find(
@@ -133,12 +166,48 @@ export default function AdminCalendar() {
           </Select>
         </div>
 
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={(date) => date && setSelectedDate(date)}
-          className="hidden"
-        />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 border rounded-md p-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                if (zoomLevel === "normal") setZoomLevel("compact");
+                if (zoomLevel === "comfortable") setZoomLevel("normal");
+              }}
+              disabled={zoomLevel === "compact"}
+              data-testid="button-zoom-out"
+              className="h-7 w-7"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <span className="text-xs text-muted-foreground px-2 min-w-20 text-center" data-testid="text-zoom-level">
+              {zoomLevel === "compact" && "Compact"}
+              {zoomLevel === "normal" && "Normal"}
+              {zoomLevel === "comfortable" && "Comfortable"}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                if (zoomLevel === "compact") setZoomLevel("normal");
+                if (zoomLevel === "normal") setZoomLevel("comfortable");
+              }}
+              disabled={zoomLevel === "comfortable"}
+              data-testid="button-zoom-in"
+              className="h-7 w-7"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => date && setSelectedDate(date)}
+            className="hidden"
+          />
+        </div>
       </div>
 
       {/* Grid */}
@@ -146,11 +215,11 @@ export default function AdminCalendar() {
         <div className="flex h-full">
           {/* Time Column */}
           <div className="w-20 flex-shrink-0 border-r bg-muted/30 sticky left-0 z-30">
-            <div className="h-10 border-b bg-card" />
+            <div className={`${currentZoom.headerHeight} border-b bg-card`} />
             {timeSlots.map((slot) => (
               <div
                 key={slot}
-                className="h-6 border-b flex items-center justify-center text-time-label text-muted-foreground text-xs"
+                className={`${currentZoom.rowHeight} border-b flex items-center justify-center text-time-label text-muted-foreground ${currentZoom.textSize}`}
               >
                 {formatTimeRange(slot, slot + SLOT_DURATION)}
               </div>
@@ -161,21 +230,21 @@ export default function AdminCalendar() {
           <div className="flex-1 overflow-x-auto">
             <div className="flex min-w-max">
               {sortedHostesses.map((hostess) => (
-                <div key={hostess.id} className="w-32 border-r flex-shrink-0">
+                <div key={hostess.id} className={`${currentZoom.columnWidth} border-r flex-shrink-0`}>
                   {/* Header */}
-                  <div className="h-10 border-b bg-card flex items-center justify-between px-2 sticky top-0 z-20">
+                  <div className={`${currentZoom.headerHeight} border-b bg-card flex items-center justify-between px-2 sticky top-0 z-20`}>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Avatar className="h-6 w-6">
+                      <Avatar className={currentZoom.avatarSize}>
                         <AvatarImage src={hostess.photoUrl || undefined} />
-                        <AvatarFallback className="text-xs">
+                        <AvatarFallback className={currentZoom.textSize}>
                           {hostess.displayName.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs truncate font-medium">
+                      <span className={`${currentZoom.textSize} truncate font-medium`}>
                         {hostess.displayName}
                       </span>
                     </div>
-                    <Badge variant="outline" className="text-xs h-5">
+                    <Badge variant="outline" className={`${currentZoom.textSize} ${currentZoom.badgeHeight}`}>
                       {hostess.location === "DOWNTOWN" ? "D" : "W"}
                     </Badge>
                   </div>
@@ -188,7 +257,7 @@ export default function AdminCalendar() {
                     return (
                       <div
                         key={slot}
-                        className={`h-6 border-b cursor-pointer transition-colors ${
+                        className={`${currentZoom.rowHeight} border-b cursor-pointer transition-colors ${
                           isAvailable
                             ? "bg-card hover:bg-muted/30"
                             : booking.status === "CONFIRMED" || booking.status === "PENDING"
@@ -199,7 +268,7 @@ export default function AdminCalendar() {
                         data-testid={`cell-${hostess.id}-${slot}`}
                       >
                         {booking && (
-                          <div className="px-1 text-xs truncate text-white font-medium leading-6">
+                          <div className={`px-1 ${currentZoom.textSize} truncate text-white font-medium flex items-center h-full`}>
                             {booking.client.email.split('@')[0]}
                           </div>
                         )}
