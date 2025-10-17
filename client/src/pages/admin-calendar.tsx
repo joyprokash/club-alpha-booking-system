@@ -53,11 +53,35 @@ export default function AdminCalendar() {
     );
   };
 
+  const { toast } = useToast();
+
+  const cancelBookingMutation = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const response = await apiRequest("POST", `/api/bookings/${bookingId}/cancel`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/bookings/day?date=${dateStr}`] });
+      toast({ title: "Booking canceled successfully" });
+      setEditBookingOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to cancel booking",
+        description: error.message,
+      });
+    },
+  });
+
   const handleCellClick = (hostessId: string, startTime: number) => {
     const booking = getBookingAtSlot(hostessId, startTime);
     if (!booking) {
       setSelectedSlot({ hostessId, date: dateStr, startTime });
       setQuickBookingOpen(true);
+    } else {
+      setSelectedBooking(booking);
+      setEditBookingOpen(true);
     }
   };
 
@@ -96,9 +120,7 @@ export default function AdminCalendar() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
+          
           <Select value={locationFilter} onValueChange={setLocationFilter}>
             <SelectTrigger className="w-40" data-testid="select-calendar-location">
               <SelectValue />
@@ -109,14 +131,14 @@ export default function AdminCalendar() {
               <SelectItem value="WEST_END">West End</SelectItem>
             </SelectContent>
           </Select>
-
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => date && setSelectedDate(date)}
-            className="hidden"
-          />
         </div>
+
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(date) => date && setSelectedDate(date)}
+          className="hidden"
+        />
       </div>
 
       {/* Grid */}
@@ -205,6 +227,111 @@ export default function AdminCalendar() {
               onSuccess={() => setQuickBookingOpen(false)}
               onCancel={() => setQuickBookingOpen(false)}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Booking Modal */}
+      <Dialog open={editBookingOpen} onOpenChange={setEditBookingOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+            <DialogDescription>View and manage this booking</DialogDescription>
+          </DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    <span>Client</span>
+                  </div>
+                  <div className="font-medium">{selectedBooking.client.email}</div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    <span>Hostess</span>
+                  </div>
+                  <div className="font-medium">{selectedBooking.hostess.displayName}</div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>Date</span>
+                  </div>
+                  <div className="font-medium">{format(new Date(selectedBooking.date), "MMM d, yyyy")}</div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>Time</span>
+                  </div>
+                  <div className="font-medium">
+                    {formatTimeRange(selectedBooking.startTime, selectedBooking.endTime)}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <FileText className="h-4 w-4" />
+                    <span>Service</span>
+                  </div>
+                  <div className="font-medium">{selectedBooking.service.name}</div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    <span>Location</span>
+                  </div>
+                  <div className="font-medium">
+                    {selectedBooking.hostess.location === "DOWNTOWN" ? "Downtown" : "West End"}
+                  </div>
+                </div>
+              </div>
+
+              {selectedBooking.notes && (
+                <div className="space-y-2">
+                  <div className="text-sm text-muted-foreground">Notes</div>
+                  <div className="p-3 bg-muted rounded-md text-sm">{selectedBooking.notes}</div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <Badge variant={
+                  selectedBooking.status === "CONFIRMED" ? "default" :
+                  selectedBooking.status === "PENDING" ? "secondary" :
+                  selectedBooking.status === "CANCELED" ? "destructive" :
+                  "outline"
+                }>
+                  {selectedBooking.status}
+                </Badge>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setEditBookingOpen(false)}
+                  data-testid="button-close-booking"
+                >
+                  Close
+                </Button>
+                {selectedBooking.status !== "CANCELED" && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => cancelBookingMutation.mutate(selectedBooking.id)}
+                    disabled={cancelBookingMutation.isPending}
+                    data-testid="button-cancel-booking"
+                  >
+                    {cancelBookingMutation.isPending ? "Canceling..." : "Cancel Booking"}
+                  </Button>
+                )}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
