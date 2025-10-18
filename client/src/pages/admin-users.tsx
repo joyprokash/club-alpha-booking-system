@@ -4,18 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { UserCog, FileUp, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { UserCog, FileUp, AlertCircle, CheckCircle2, XCircle, KeyRound } from "lucide-react";
 import type { User, Hostess } from "@shared/schema";
 
 export default function AdminUsers() {
   const { toast } = useToast();
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [selectedHostess, setSelectedHostess] = useState<string>("");
   const [csvData, setCsvData] = useState("");
@@ -74,6 +77,24 @@ export default function AdminUsers() {
     },
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ id, password }: { id: string; password: string }) => {
+      return apiRequest("POST", `/api/admin/users/${id}/reset-password`, { password });
+    },
+    onSuccess: () => {
+      toast({ title: "Password reset successfully" });
+      setResetPasswordUser(null);
+      setNewPassword("");
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to reset password",
+        description: error.message,
+      });
+    },
+  });
+
   const handleUpdate = () => {
     if (!editingUser || !selectedRole) return;
     
@@ -95,6 +116,22 @@ export default function AdminUsers() {
     }
     setImportResults(null);
     bulkImportMutation.mutate(csvData);
+  };
+
+  const handleResetPassword = () => {
+    if (!resetPasswordUser || !newPassword) return;
+    if (newPassword.length < 8) {
+      toast({
+        variant: "destructive",
+        title: "Password too short",
+        description: "Password must be at least 8 characters",
+      });
+      return;
+    }
+    resetPasswordMutation.mutate({
+      id: resetPasswordUser.id,
+      password: newPassword,
+    });
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,19 +305,33 @@ export default function AdminUsers() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setEditingUser(user);
-                              setSelectedRole(user.role);
-                              setSelectedHostess(linkedHostess?.id || "");
-                            }}
-                            data-testid={`button-edit-${user.id}`}
-                          >
-                            <UserCog className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingUser(user);
+                                setSelectedRole(user.role);
+                                setSelectedHostess(linkedHostess?.id || "");
+                              }}
+                              data-testid={`button-edit-${user.id}`}
+                            >
+                              <UserCog className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setResetPasswordUser(user);
+                                setNewPassword("");
+                              }}
+                              data-testid={`button-reset-password-${user.id}`}
+                            >
+                              <KeyRound className="h-4 w-4 mr-2" />
+                              Reset Password
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -343,6 +394,41 @@ export default function AdminUsers() {
                 data-testid="button-update-user"
               >
                 {updateUserMutation.isPending ? "Updating..." : "Update User"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={!!resetPasswordUser} onOpenChange={(open) => !open && (setResetPasswordUser(null), setNewPassword(""))}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Password</DialogTitle>
+              <DialogDescription>
+                Set a new password for {resetPasswordUser?.email}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">New Password</label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 8 characters)"
+                  data-testid="input-new-password"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Password must be at least 8 characters long
+                </p>
+              </div>
+
+              <Button
+                onClick={handleResetPassword}
+                className="w-full"
+                disabled={resetPasswordMutation.isPending || newPassword.length < 8}
+                data-testid="button-confirm-reset-password"
+              >
+                {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
               </Button>
             </div>
           </DialogContent>

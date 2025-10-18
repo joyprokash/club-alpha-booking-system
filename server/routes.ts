@@ -575,6 +575,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(error);
     }
   });
+
+  // Upload profile photo for staff's linked hostess
+  app.post("/api/staff/profile-photo", 
+    authenticateToken, 
+    requireRole("STAFF"), 
+    upload.single("photo"),
+    async (req: AuthRequest, res, next) => {
+      try {
+        if (!req.file) {
+          return res.status(400).json({ error: { code: "BAD_REQUEST", message: "No file uploaded" } });
+        }
+
+        // Find the hostess linked to this staff user
+        const hostesses = await storage.getHostesses();
+        const hostess = hostesses.find(h => h.userId === req.user?.id);
+        
+        if (!hostess) {
+          await fs.unlink(req.file.path).catch(() => {});
+          return res.status(404).json({ error: { code: "NOT_FOUND", message: "No linked hostess profile found" } });
+        }
+
+        // Construct public URL for the photo
+        const photoUrl = `/api/assets/hostess-photos/${req.file.filename}`;
+
+        // Update hostess with new photo URL
+        const updatedHostess = await storage.updateHostess(hostess.id, { photoUrl });
+
+        // Verify update succeeded
+        if (!updatedHostess) {
+          await fs.unlink(req.file.path).catch(() => {});
+          return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to update profile photo" } });
+        }
+
+        await storage.createAuditLog({
+          userId: req.user?.id,
+          action: "UPDATE",
+          entity: "hostess",
+          entityId: hostess.id,
+          meta: { photoUrl, staffUpload: true },
+        });
+
+        res.json({ photoUrl, hostess: updatedHostess });
+      } catch (error) {
+        // Clean up uploaded file if database update fails
+        if (req.file) {
+          await fs.unlink(req.file.path).catch(() => {});
+        }
+        next(error);
+      }
+    }
+  );
   
   // Get staff's today's bookings (for their linked hostess)
   app.get("/api/staff/bookings/today", authenticateToken, requireRole("STAFF"), async (req: AuthRequest, res, next) => {
@@ -780,6 +831,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({ ...user, passwordHash: undefined });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Reset user password (admin only)
+  app.post("/api/admin/users/:id/reset-password", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const { password } = z.object({
+        password: z.string().min(8, "Password must be at least 8 characters"),
+      }).parse(req.body);
+
+      const passwordHash = await bcrypt.hash(password, 10);
+      await storage.updateUser(id, { passwordHash });
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entity: "user",
+        entityId: id,
+        meta: { action: "password_reset" },
+      });
+
+      res.json({ success: true });
     } catch (error) {
       next(error);
     }
