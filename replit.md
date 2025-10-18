@@ -11,6 +11,11 @@ A production-ready multi-location hostess booking platform with advanced schedul
 - **Time Handling**: date-fns, date-fns-tz (America/Toronto timezone)
 
 ## Recent Changes
+- 2025-10-18: **Admin password reset** - Added password reset functionality for ADMIN users to change any user's password through the Users management page. Requires 8+ character passwords, uses bcrypt hashing, and logs all actions in audit log. Architect-reviewed for security.
+- 2025-10-18: **STAFF profile photo upload** - Added secure photo upload for STAFF users on their schedule page. Uses dedicated STAFF-only endpoint that verifies ownership before upload. Photos stored in hostess-photos directory and logged with staffUpload flag.
+- 2025-10-18: **STAFF schedule view** - STAFF users now have dedicated /staff/schedule page showing their linked hostess profile, today's bookings, and upcoming appointments. All data filtered server-side to show only their assigned hostess.
+- 2025-10-18: **Compact calendar with zoom controls** - Added 3-level zoom controls (compact/normal/comfortable) for admin calendar. Reduced default row heights to 24px and column widths to 128px. Added resizable columns with drag-to-adjust functionality (min 100px).
+- 2025-10-18: **Calendar color legend** - Added color-coded booking legend (Blue=Booked, Green=Notes Added, Red=Time Off) beside location filter for easy reference.
 - 2025-10-17: **Bulk user import** - Added CSV upload feature for admins to bulk create users. Supports email, role (ADMIN/STAFF/RECEPTION/CLIENT), and optional password. Auto-generates unique secure passwords if not provided. Shows detailed import results with generated passwords. E2E tests confirmed unique password generation and proper validation.
 - 2025-10-17: **Import/Export schedule fixes** - Fixed authentication token issues (localStorage "auth_token") and response parsing in import/export pages. Both features fully functional and tested.
 - 2025-10-17: **Streamlined client registration** - Any email address can register without confirmation. Users are automatically logged in after registration and redirected to hostesses page. E2E tests confirmed full booking flow.
@@ -50,9 +55,11 @@ A production-ready multi-location hostess booking platform with advanced schedul
 - Cannot delete entities or manage users
 
 ### STAFF
+- Login redirects to dedicated /staff/schedule page
 - View personal calendar filtered to their linked hostess profile
 - See "Your Schedule Today" and upcoming appointments
-- Simplified interface (no admin tools)
+- Upload profile picture for their linked hostess
+- Simplified interface (no admin tools, no access to other hostesses)
 
 ### CLIENT
 - Register with any email address (no confirmation required)
@@ -191,8 +198,15 @@ id,hostess,mon_day,mon_night,tue_day,tue_night,...
 - POST /api/admin/users/bulk-import (CSV upload: email, role, optional password with unique auto-generation)
 - GET /api/admin/users
 - PATCH /api/admin/users/:id (role + hostess link)
+- POST /api/admin/users/:id/reset-password (admin resets any user's password, min 8 chars, bcrypt hashed)
 - POST /api/schedule/import
 - GET /api/schedule/export?location=
+
+### STAFF
+- GET /api/staff/hostess (get staff's linked hostess profile)
+- GET /api/staff/bookings/today (today's bookings for linked hostess)
+- GET /api/staff/bookings/upcoming (upcoming bookings for linked hostess)
+- POST /api/staff/profile-photo (upload profile photo for linked hostess, ownership verified)
 
 ### Analytics (Admin-Only)
 - GET /api/analytics/revenue?groupBy=hostess|location|service - Revenue breakdown by specified dimension
