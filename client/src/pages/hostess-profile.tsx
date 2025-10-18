@@ -182,18 +182,13 @@ export default function HostessProfile() {
                             data-testid={`service-card-${service.id}`}
                           >
                             <CardContent className="p-4">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <p className={`font-medium ${isSelected ? "text-primary" : ""}`}>
-                                    {service.name}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                                    <Clock className="h-3 w-3" />
-                                    {service.durationMin} minutes
-                                  </p>
-                                </div>
-                                <p className={`font-semibold ${isSelected ? "text-primary" : ""}`}>
-                                  ${(service.priceCents / 100).toFixed(2)}
+                              <div>
+                                <p className={`font-medium ${isSelected ? "text-primary" : ""}`}>
+                                  {service.name}
+                                </p>
+                                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                  <Clock className="h-3 w-3" />
+                                  {service.durationMin} minutes
                                 </p>
                               </div>
                             </CardContent>
