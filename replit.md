@@ -1,280 +1,52 @@
 # Club Alpha Booking Platform
 
 ## Overview
-A production-ready multi-location hostess booking platform with advanced scheduling, role-based access control, and comprehensive admin tools. Built for managing appointments across Downtown and West End locations with real-time conflict detection and double-booking prevention.
+Club Alpha is a production-ready, multi-location hostess booking platform designed to manage appointments across Downtown and West End locations. It features advanced scheduling, real-time conflict detection, double-booking prevention, role-based access control, and comprehensive admin tools. The platform aims to streamline booking operations, enhance client experience, and provide robust management capabilities for staff and administrators.
 
-## Tech Stack
-- **Frontend**: React 18, TypeScript, Vite, TanStack Query, Wouter routing, Tailwind CSS, shadcn/ui
-- **Backend**: Node.js 20, Express, Drizzle ORM, Zod validation
-- **Database**: PostgreSQL (Supabase)
-- **Auth**: JWT with role-based access (ADMIN, STAFF, RECEPTION, CLIENT)
-- **Time Handling**: date-fns, date-fns-tz (America/Toronto timezone)
+## User Preferences
+I want the agent to use simple language.
+I want iterative development.
+I want detailed explanations.
+Ask before making major changes.
+Do not make changes to the folder `Z`.
+Do not make changes to the file `Y`.
 
-## Recent Changes
-- 2025-10-18: **Reception hostess browsing** - RECEPTION users can now browse the client-facing hostesses page and click through to individual profile pages. Sidebar includes "Browse Hostesses" link for the client-facing view and "Manage Hostesses" for admin CRUD operations.
-- 2025-10-18: **Admin password reset** - Added password reset functionality for ADMIN users to change any user's password through the Users management page. Requires 8+ character passwords, uses bcrypt hashing, and logs all actions in audit log. Architect-reviewed for security.
-- 2025-10-18: **STAFF profile photo upload** - Added secure photo upload for STAFF users on their schedule page. Uses dedicated STAFF-only endpoint that verifies ownership before upload. Photos stored in hostess-photos directory and logged with staffUpload flag.
-- 2025-10-18: **STAFF schedule view** - STAFF users now have dedicated /staff/schedule page showing their linked hostess profile, today's bookings, and upcoming appointments. All data filtered server-side to show only their assigned hostess.
-- 2025-10-18: **Compact calendar with zoom controls** - Added 3-level zoom controls (compact/normal/comfortable) for admin calendar. Reduced default row heights to 24px and column widths to 128px. Added resizable columns with drag-to-adjust functionality (min 100px).
-- 2025-10-18: **Calendar color legend** - Added color-coded booking legend (Blue=Booked, Green=Notes Added, Red=Time Off) beside location filter for easy reference.
-- 2025-10-17: **Bulk user import** - Added CSV upload feature for admins to bulk create users. Supports email, role (ADMIN/STAFF/RECEPTION/CLIENT), and optional password. Auto-generates unique secure passwords if not provided. Shows detailed import results with generated passwords. E2E tests confirmed unique password generation and proper validation.
-- 2025-10-17: **Import/Export schedule fixes** - Fixed authentication token issues (localStorage "auth_token") and response parsing in import/export pages. Both features fully functional and tested.
-- 2025-10-17: **Streamlined client registration** - Any email address can register without confirmation. Users are automatically logged in after registration and redirected to hostesses page. E2E tests confirmed full booking flow.
-- 2025-10-17: **Homepage with integrated login** - Moved login form directly to homepage underneath logo/header. Users can log in from the main page with demo credentials displayed below. Fixed routing to use reactive location tracking for proper redirects. E2E tests confirmed.
-- 2025-10-17: **Role-based login redirects** - Implemented automatic redirects after login: ADMIN→/admin/dashboard, RECEPTION→/admin/calendar, STAFF→/staff/schedule, CLIENT→/hostesses. E2E tests confirmed all roles redirect correctly.
-- 2025-10-17: **Client booking flow bug fixes** - Fixed critical bugs preventing client bookings: added /my-bookings route, fixed availability query URL construction, made clientId/status optional in validation (derived server-side), added explicit query refetch after booking creation. E2E tests passing.
-- 2025-10-17: Analytics dashboard completed - revenue metrics, booking trends, cancellation rates with recharts visualization
-- 2025-10-17: Client self-service features - add notes and request cancellation on bookings
-- 2025-10-17: Photo upload for hostesses with multer integration
-- 2025-10-17: Auth flow fixed - JWT tokens stored in localStorage with proper Authorization headers
-- 2025-01-17: Initial project scaffold with complete schema and frontend components
-- Complete database schema with users, hostesses, services, bookings, time-off, weekly schedules, and audit logs
-- Authentication system with JWT and role-based access
-- Admin daily grid with 15-minute slots (10:00-23:00) and quick booking modal
-- Client-facing hostess discovery and booking interface
-- Services CRUD management
-- Database seed script with comprehensive sample data (10 services, 20 hostesses, 50 clients, bookings, schedules)
+## System Architecture
+The platform is built with a React 18, TypeScript, Vite frontend using TanStack Query, Wouter routing, Tailwind CSS, and shadcn/ui. The backend is a Node.js 20 Express application with Drizzle ORM and Zod validation, connecting to a PostgreSQL database (Supabase). Authentication is handled via JWT with role-based access for ADMIN, STAFF, RECEPTION, and CLIENT. Time management consistently uses `date-fns` and `date-fns-tz` (America/Toronto timezone), storing all times as minutes from midnight.
 
-## User Roles & Permissions
-### ADMIN
-- Full access to all features
-- User management and role assignments
-- Hostess ↔ Staff linking
-- Bulk user import (CSV upload with email, role, optional password)
-- Bulk client import
-- Complete calendar view and booking management
-- Import/export schedules
-- Services CRUD
-- Audit log viewing
+### UI/UX Decisions
+- **Admin/Reception Interface**: Primarily dark mode with a background of `hsl(220 15% 12%)` and surface `hsl(220 14% 16%)`. Status colors are muted teal for available, vibrant blue for booked, warm amber for time-off, and clear red for conflicts.
+- **Client-Facing Interface**: Primarily light mode with a background of `hsl(0 0% 100%)` and surface `hsl(220 20% 98%)`. Features a sophisticated blue as the primary color (`hsl(210 90% 45%)`), generous whitespace, and friendly micro-copy.
+- **Typography**: Uses Inter for primary text and Roboto Mono for all time displays.
+- **Layout**: Consistent spacing with Tailwind units, fixed grid time column (80px), hostess columns with a minimum width of 200px, and cell height of 48px for 15-minute slots. Max width for admin is 1800px and client is 1280px.
 
-### RECEPTION
-- View calendar and create bookings
-- Cancel future bookings (not past)
-- Browse hostesses (client-facing view with profiles)
-- Click on hostesses to view full profile pages
-- Manage hostesses (admin view for CRUD operations)
-- Edit weekly schedules and block time-off
-- Import schedules (CSV upload)
-- Export schedules
-- View only last 14 days of history
-- Cannot delete entities or manage users
+### Technical Implementations
+- **Database Schema**: Core entities include `users`, `hostesses`, `services`, `bookings`, `timeOff`, `weeklySchedule`, and `auditLog`.
+- **Time System**: All times are stored as minutes from midnight (0-1439). The system operates on a 10:00-23:00 grid in 15-minute increments, with a default timezone of America/Toronto.
+- **Double-Booking Prevention**: Utilizes serializable transactions with advisory locks per `(hostessId, date)`, validating against existing bookings, time-off blocks, and weekly schedules to prevent conflicts.
+- **Admin Daily Grid**: Features sticky time and hostess headers, horizontal scrolling, color-coded cells, quick booking modal integration, and 3-level zoom controls.
+- **Quick Booking Modal**: Pre-fills booking details, offers client autocomplete, service selection, notes field, and validates conflicts.
+- **Client Booking Flow**: Allows browsing hostesses by location, viewing profiles, selecting dates, choosing services, picking available time slots, adding notes, and confirming bookings.
+- **Import/Export Schedules**: Supports CSV import and export of weekly schedules. Format: `id,hostess,monday,tuesday,wednesday,thursday,friday,saturday,sunday` with time ranges like "10:00-18:00". Idempotent upserts by (hostessId, weekday) with row-by-row error capture.
+- **Role-Based Access Control**: Defines distinct permissions for ADMIN, RECEPTION, STAFF, and CLIENT roles, including specific dashboard views and functionalities.
+- **Password Reset**: Admins can reset any user's password, requiring 8+ characters and bcrypt hashing, with all actions logged.
+- **Photo Upload**: STAFF users can securely upload profile photos for their linked hostess via a dedicated endpoint that verifies ownership.
+- **Analytics Dashboard**: Provides revenue metrics, booking trends, and cancellation rates with `recharts` visualization.
 
-### STAFF
-- Login redirects to dedicated /staff/schedule page
-- View personal calendar filtered to their linked hostess profile
-- See "Your Schedule Today" and upcoming appointments
-- Upload profile picture for their linked hostess
-- Simplified interface (no admin tools, no access to other hostesses)
-
-### CLIENT
-- Register with any email address (no confirmation required)
-- Automatically logged in after registration
-- Browse hostesses by location
-- View hostess profiles with bio, specialties, and schedule
-- Book appointments with real-time availability
-- View personal booking history
-
-## Project Architecture
-### Database Schema
-- **users**: id, email, passwordHash, role, forcePasswordReset, createdAt
-- **hostesses**: id, slug, displayName, bio, specialties[], location, photoUrl, active, userId (staff link)
-- **services**: id, name, durationMin, priceCents
-- **bookings**: id, date, startTime (minutes), endTime, hostessId, clientId, serviceId, status, notes
-- **timeOff**: id, hostessId, date, startTime, endTime, reason
-- **weeklySchedule**: id, hostessId, weekday (0-6), startTimeDay, endTimeDay, startTimeNight, endTimeNight
-- **auditLog**: id, userId, action, entity, entityId, meta, createdAt
-
-### Time System
-- All times stored as **minutes from midnight** (0-1439)
-- Display format: **24-hour (HH:mm)** in monospace font
-- Default timezone: **America/Toronto**
-- Grid operates: 10:00-23:00 in 15-minute increments
-- Helpers: parseTimeToMinutes(), minutesToTime(), hasTimeConflict()
-
-### Double-Booking Prevention
-- Serializable transactions with advisory locks per (hostessId, date)
-- Validates against existing bookings (excludes CANCELED)
-- Prevents client overlaps across all hostesses
-- Respects TimeOff blocks
-- Enforces WeeklySchedule boundaries
-- Returns clear conflict errors with time ranges
-
-## Design System
-### Admin/Reception (Dark Mode Primary)
-- Background: hsl(220 15% 12%)
-- Surface: hsl(220 14% 16%)
-- Status colors:
-  - Available: hsl(145 55% 45%) - muted teal
-  - Booked: hsl(210 85% 55%) - vibrant blue
-  - Time-Off: hsl(25 75% 55%) - warm amber
-  - Conflict: hsl(0 75% 60%) - clear red
-
-### Client-Facing (Light Mode Primary)
-- Background: hsl(0 0% 100%)
-- Surface: hsl(220 20% 98%)
-- Primary: hsl(210 90% 45%) - sophisticated blue
-- Generous whitespace, friendly micro-copy
-
-### Typography
-- Primary: Inter (400, 500, 600, 700)
-- Monospace: Roboto Mono (for all time displays)
-- Grid headers: 13px, 600, uppercase
-- Time labels: 12px, 500, monospace
-- Dashboard metrics: 32px, 700
-
-### Layout Constants
-- Spacing: 2, 3, 4, 6, 8, 12, 16, 20 (Tailwind units)
-- Grid time column: 80px fixed
-- Hostess columns: 200px min-width
-- Cell height: 48px (15-min slots)
-- Admin max-width: 1800px
-- Client max-width: 1280px (max-w-7xl)
-
-## Key Components
-### Admin Daily Grid (`/admin/calendar`)
-- Sticky time column (left) and hostess headers (top)
-- Horizontal scroll for 8+ hostesses
-- Color-coded cells: available (green), booked (blue), time-off (amber)
-- Click available cell → Quick Booking modal
-- Real-time conflict detection
-
-### Quick Booking Modal
-- Pre-filled date, time, hostess, location
-- Client autocomplete (search by email)
-- Service selection with duration/price
-- Notes field
-- Validates conflicts before submission
-
-### Client Booking Flow
-1. Browse hostesses (`/hostesses`) with location filter
-2. View profile (`/hostess/:slug`) with bio, specialties, weekly schedule
-3. Select date from calendar
-4. Choose service (sorted by duration ascending)
-5. Pick available time slot (15-min grid)
-6. Add optional notes
-7. Confirm booking
-
-### Import/Export Schedules
-**Import CSV Format:**
-```
-id,hostess,mon_day,mon_night,tue_day,tue_night,...
-1,Jane-D,10:00-18:00,W,12:00-20:00,D,...
-```
-- Idempotent upsert by (hostessId, weekday)
-- Sequential processing with ETA
-- Row-by-row error capture
-- Progress UI with success/fail indicators
-
-**Export CSV Format:**
-- Alphabetical by hostess name
-- HH:mm-HH:mm format (24-hour)
-- Append ,D (Downtown) or ,W (West End)
-- Null-safe (empty cells for off days)
-
-## API Endpoints
-### Auth
-- POST /api/auth/register (CLIENT only)
-- POST /api/auth/login (returns JWT + requiresPasswordReset flag)
-- POST /api/auth/reset-password
-- GET /api/auth/me
-
-### Hostesses
-- GET /api/hostesses?location=&q=
-- GET /api/hostesses/:slug
-- POST /api/hostesses/:id/photo (admin/reception)
-
-### Bookings
-- GET /api/bookings/day?date=YYYY-MM-DD&location=
-- GET /api/bookings/my (current user)
-- GET /api/bookings/upcoming
-- POST /api/bookings (full validation + conflict check)
-- POST /api/bookings/:id/cancel (role-based rules)
-- PATCH /api/bookings/:id/notes (client can add notes to their bookings)
-
-### Services
-- GET /api/services (sorted asc by durationMin)
-- POST /api/services (admin)
-- PATCH /api/services/:id
-- DELETE /api/services/:id
-
-### Admin
-- GET /api/clients?q= (autocomplete)
-- POST /api/clients/bulk-import (rate-limited, chunked)
-- POST /api/admin/users/bulk-import (CSV upload: email, role, optional password with unique auto-generation)
-- GET /api/admin/users
-- PATCH /api/admin/users/:id (role + hostess link)
-- POST /api/admin/users/:id/reset-password (admin resets any user's password, min 8 chars, bcrypt hashed)
-- POST /api/schedule/import
-- GET /api/schedule/export?location=
-
-### STAFF
-- GET /api/staff/hostess (get staff's linked hostess profile)
-- GET /api/staff/bookings/today (today's bookings for linked hostess)
-- GET /api/staff/bookings/upcoming (upcoming bookings for linked hostess)
-- POST /api/staff/profile-photo (upload profile photo for linked hostess, ownership verified)
-
-### Analytics (Admin-Only)
-- GET /api/analytics/revenue?groupBy=hostess|location|service - Revenue breakdown by specified dimension
-- GET /api/analytics/bookings-trend?days=7|30|90 - Booking trends over time period
-- GET /api/analytics/cancellations - Status distribution and cancellation metrics
-
-## Environment Variables
-- `DATABASE_URL`: Supabase PostgreSQL connection string (transaction pooler)
-- `JWT_SECRET`: Secret key for JWT signing/verification
-- `APP_TZ`: America/Toronto (default timezone)
-
-## Development Workflow
-```bash
-# Install dependencies
-npm install
-
-# Push schema to database
-npm run db:push
-
-# Seed database with sample data (run once)
-NODE_ENV=development tsx server/seed.ts
-
-# Run dev servers (Express + Vite)
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-```
-
-### Seed Data
-The database can be seeded with comprehensive sample data using `server/seed.ts`:
-- **Admin user**: admin@clubalpha.ca / admin123
-- **Reception user**: reception@clubalpha.ca / reception123
-- **10 Services**: Ranging from 15-min Express Session ($30) to 6-hour Full Day Experience ($600)
-- **20 Hostesses**: 10 Downtown, 10 West End with unique bios and specialties
-- **120 Weekly Schedules**: Mon-Fri 10:00-18:00 (day) + 19:00-23:00 (night), Sat 12:00-20:00 (day only)
-- **50 Client users**: client1@example.com - client50@example.com / client123
-- **30 Sample Bookings**: Spread across today and next 2 days
-- **5 Time-Off Blocks**: Sample unavailability for next week
-
-Note: Seed script is idempotent and will skip if data already exists.
-
-## Implemented Features
-- ✅ Advanced analytics dashboard with revenue, trends, and cancellation metrics
-- ✅ Photo upload for hostesses (multer integration, file storage in attached_assets/hostess-photos/)
-- ✅ Client self-service: add notes to bookings, request cancellations
-- ✅ Database seed script with comprehensive sample data
-- ✅ Role-based access control (ADMIN, STAFF, RECEPTION, CLIENT)
-- ✅ Double-booking prevention with transaction locks
-- ✅ CSV import/export for weekly schedules
-- ✅ Bulk client import with rate limiting
-
-## Next Phase Features (Not Yet Implemented)
-- Email notifications (booking confirmations, reminders) - Resend/SendGrid integration ready, requires API keys
-- SMS notifications (confirmations, reminders) - Twilio integration ready, requires API credentials
-- Recurring bookings
-- Client feedback/ratings
-- Multi-language support
-
-**Note on Notifications:** Email and SMS notification infrastructure is documented and ready for implementation. When ready to enable:
-- Email: Set up Resend (https://resend.com) or SendGrid API keys
-- SMS: Set up Twilio account with Account SID, Auth Token, and Phone Number
-- Integration connectors available via `search_integrations` tool
+## External Dependencies
+- **PostgreSQL**: Used as the primary database, managed via Supabase.
+- **Node.js/Express**: Backend framework.
+- **React/Vite**: Frontend framework and build tool.
+- **Drizzle ORM**: Object-Relational Mapper for database interactions.
+- **Zod**: Schema declaration and validation library.
+- **JWT**: For secure authentication and authorization.
+- **date-fns / date-fns-tz**: For robust date and time manipulation and timezone handling.
+- **Tailwind CSS**: Utility-first CSS framework.
+- **shadcn/ui**: UI component library.
+- **TanStack Query**: For data fetching, caching, and state management.
+- **Wouter**: For client-side routing.
+- **Multer**: For handling `multipart/form-data`, primarily for file uploads (hostess photos).
+- **bcrypt**: For password hashing.
+- **recharts**: For data visualization in the analytics dashboard.
+- **Resend/SendGrid**: Email notification services (integration ready, requires API keys).
+- **Twilio**: SMS notification service (integration ready, requires API credentials).
