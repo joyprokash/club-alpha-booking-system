@@ -228,6 +228,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update hostess (admin/reception)
+  app.patch("/api/hostesses/:id", authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const data = z.object({
+        specialties: z.array(z.string()).optional(),
+        active: z.boolean().optional(),
+      }).parse(req.body);
+
+      const hostess = await storage.updateHostess(id, data);
+
+      if (!hostess) {
+        return res.status(404).json({ error: { code: "NOT_FOUND", message: "Hostess not found" } });
+      }
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entity: "hostess",
+        entityId: id,
+        meta: { data },
+      });
+
+      res.json(hostess);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Upload hostess photo (admin/reception)
   app.post("/api/hostesses/:id/photo", 
     authenticateToken, 
