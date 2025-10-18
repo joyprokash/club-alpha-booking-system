@@ -17,6 +17,7 @@ export default function HostessProfile() {
   const [, setLocation] = useLocation();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [showBooking, setShowBooking] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
 
   const { data: hostess, isLoading } = useQuery<HostessWithSchedule>({
     queryKey: [`/api/hostesses/${slug}`],
@@ -167,24 +168,38 @@ export default function HostessProfile() {
                   <div>
                     <h3 className="font-semibold mb-3">Available Services</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {sortedServices.map((service) => (
-                        <Card key={service.id} className="hover-elevate">
-                          <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="font-medium">{service.name}</p>
-                                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                                  <Clock className="h-3 w-3" />
-                                  {service.durationMin} minutes
+                      {sortedServices.map((service) => {
+                        const isSelected = selectedService?.id === service.id;
+                        return (
+                          <Card
+                            key={service.id}
+                            className={`cursor-pointer transition-all ${
+                              isSelected
+                                ? "border-primary border-2 bg-primary/5"
+                                : "hover-elevate"
+                            }`}
+                            onClick={() => setSelectedService(service)}
+                            data-testid={`service-card-${service.id}`}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className={`font-medium ${isSelected ? "text-primary" : ""}`}>
+                                    {service.name}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                    <Clock className="h-3 w-3" />
+                                    {service.durationMin} minutes
+                                  </p>
+                                </div>
+                                <p className={`font-semibold ${isSelected ? "text-primary" : ""}`}>
+                                  ${(service.priceCents / 100).toFixed(2)}
                                 </p>
                               </div>
-                              <p className="font-semibold">
-                                ${(service.priceCents / 100).toFixed(2)}
-                              </p>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   </div>
 
