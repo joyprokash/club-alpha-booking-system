@@ -54,6 +54,7 @@ A production-ready multi-location hostess booking platform with advanced schedul
 - Click on hostesses to view full profile pages
 - Manage hostesses (admin view for CRUD operations)
 - Edit weekly schedules and block time-off
+- Import schedules (CSV upload)
 - Export schedules
 - View only last 14 days of history
 - Cannot delete entities or manage users

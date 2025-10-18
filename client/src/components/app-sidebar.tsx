@@ -89,6 +89,16 @@ export function AppSidebar() {
       url: "/admin/users",
       icon: UserCog,
     },
+    {
+      title: "Import Schedule",
+      url: "/admin/import",
+      icon: FileUp,
+    },
+    {
+      title: "Export Schedule",
+      url: "/admin/export",
+      icon: FileDown,
+    },
   ];
 
   const staffItems = [
