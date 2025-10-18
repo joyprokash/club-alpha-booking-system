@@ -11,6 +11,7 @@ A production-ready multi-location hostess booking platform with advanced schedul
 - **Time Handling**: date-fns, date-fns-tz (America/Toronto timezone)
 
 ## Recent Changes
+- 2025-10-18: **Reception hostess browsing** - RECEPTION users can now browse the client-facing hostesses page and click through to individual profile pages. Sidebar includes "Browse Hostesses" link for the client-facing view and "Manage Hostesses" for admin CRUD operations.
 - 2025-10-18: **Admin password reset** - Added password reset functionality for ADMIN users to change any user's password through the Users management page. Requires 8+ character passwords, uses bcrypt hashing, and logs all actions in audit log. Architect-reviewed for security.
 - 2025-10-18: **STAFF profile photo upload** - Added secure photo upload for STAFF users on their schedule page. Uses dedicated STAFF-only endpoint that verifies ownership before upload. Photos stored in hostess-photos directory and logged with staffUpload flag.
 - 2025-10-18: **STAFF schedule view** - STAFF users now have dedicated /staff/schedule page showing their linked hostess profile, today's bookings, and upcoming appointments. All data filtered server-side to show only their assigned hostess.
@@ -49,6 +50,9 @@ A production-ready multi-location hostess booking platform with advanced schedul
 ### RECEPTION
 - View calendar and create bookings
 - Cancel future bookings (not past)
+- Browse hostesses (client-facing view with profiles)
+- Click on hostesses to view full profile pages
+- Manage hostesses (admin view for CRUD operations)
 - Edit weekly schedules and block time-off
 - Export schedules
 - View only last 14 days of history
