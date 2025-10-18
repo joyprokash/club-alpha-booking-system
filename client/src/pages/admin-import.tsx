@@ -83,11 +83,11 @@ export default function AdminImport() {
             <Alert className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Expected format:</strong> id,hostess,sun_day,sun_night,mon_day,mon_night,...
+                <strong>Expected format:</strong> id,hostess,monday,tuesday,wednesday,thursday,friday,saturday,sunday
                 <br />
                 <strong>Time format:</strong> HH:mm-HH:mm (e.g., 10:00-18:00)
                 <br />
-                <strong>Example:</strong> 1,Jane-D,10:00-18:00,19:00-23:00,12:00-20:00,D,...
+                <strong>Example:</strong> 1,Sophia,10:00-18:00,10:00-18:00,10:00-18:00,10:00-18:00,10:00-18:00,12:00-20:00,
               </AlertDescription>
             </Alert>
 

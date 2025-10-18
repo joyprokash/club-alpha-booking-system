@@ -80,7 +80,7 @@ export default function AdminExport() {
             <AlertDescription>
               The exported CSV will include all hostesses and their weekly schedules in the format:
               <br />
-              <code className="text-xs">id,hostess,mon_day,mon_night,tue_day,tue_night,...</code>
+              <code className="text-xs">id,hostess,monday,tuesday,wednesday,thursday,friday,saturday,sunday</code>
             </AlertDescription>
           </Alert>
 
@@ -117,10 +117,10 @@ export default function AdminExport() {
             <h3 className="font-semibold mb-2">CSV Format Details</h3>
             <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Each row represents one hostess</li>
-              <li>• Columns: hostess name, day/night shifts for each weekday</li>
+              <li>• Columns: id, hostess name, Monday-Sunday schedules</li>
               <li>• Time format: HH:mm-HH:mm (24-hour)</li>
-              <li>• Location codes: D (Downtown), W (West End)</li>
-              <li>• Empty cells indicate hostess is not scheduled</li>
+              <li>• One time range per day (e.g., 10:00-18:00)</li>
+              <li>• Empty cells indicate hostess is not scheduled that day</li>
             </ul>
           </div>
         </CardContent>
