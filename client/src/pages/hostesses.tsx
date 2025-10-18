@@ -6,12 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin } from "lucide-react";
+import { MapPin, LayoutGrid, Calendar } from "lucide-react";
+import { ClientDailyView } from "@/components/client-daily-view";
 import type { Hostess } from "@shared/schema";
+
+type ViewMode = "gallery" | "daily";
 
 export default function Hostesses() {
   const [, setLocation] = useLocation();
   const [locationFilter, setLocationFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("gallery");
 
   const { data: hostesses, isLoading } = useQuery<Hostess[]>({
     queryKey: locationFilter === "all" 
@@ -33,7 +37,7 @@ export default function Hostesses() {
           </p>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 flex items-center gap-4">
           <Select value={locationFilter} onValueChange={setLocationFilter}>
             <SelectTrigger className="w-64" data-testid="select-location-filter">
               <SelectValue placeholder="All Locations" />
@@ -44,9 +48,34 @@ export default function Hostesses() {
               <SelectItem value="WEST_END">West End</SelectItem>
             </SelectContent>
           </Select>
+
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === "gallery" ? "default" : "outline"}
+              size="default"
+              onClick={() => setViewMode("gallery")}
+              className="gap-2"
+              data-testid="button-view-gallery"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Gallery
+            </Button>
+            <Button
+              variant={viewMode === "daily" ? "default" : "outline"}
+              size="default"
+              onClick={() => setViewMode("daily")}
+              className="gap-2"
+              data-testid="button-view-daily"
+            >
+              <Calendar className="h-4 w-4" />
+              Daily
+            </Button>
+          </div>
         </div>
 
-        {isLoading ? (
+        {viewMode === "daily" ? (
+          <ClientDailyView locationFilter={locationFilter} />
+        ) : isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <Card key={i} className="animate-pulse">
