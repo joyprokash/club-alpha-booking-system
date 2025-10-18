@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, MapPin, Clock, User, Mail, FileText, Calendar as CalendarIcon, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Clock, User, Mail, FileText, Calendar as CalendarIcon, ZoomIn, ZoomOut, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { QuickBookingForm } from "@/components/quick-booking-form";
@@ -18,6 +19,7 @@ import type { Hostess, BookingWithDetails } from "@shared/schema";
 type ZoomLevel = "compact" | "normal" | "comfortable";
 
 export default function AdminCalendar() {
+  const [, setLocation] = useLocation();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [quickBookingOpen, setQuickBookingOpen] = useState(false);
@@ -224,6 +226,17 @@ export default function AdminCalendar() {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Weekly View Button */}
+          <Button
+            variant="outline"
+            onClick={() => setLocation("/admin/weekly")}
+            className="gap-2"
+            data-testid="button-weekly-view"
+          >
+            <LayoutGrid className="h-4 w-4" />
+            Weekly View
+          </Button>
+
           <div className="flex items-center gap-1 border rounded-md p-1">
             <Button
               variant="ghost"

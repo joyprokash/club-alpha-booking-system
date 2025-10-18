@@ -424,6 +424,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get bookings for a date range (for weekly view)
+  app.get("/api/bookings/range", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const { startDate, endDate, location } = req.query;
+      if (!startDate || !endDate) {
+        return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Start date and end date are required" } });
+      }
+
+      // Enforce Reception 14-day history limit for start date
+      if (!enforceReceptionDateLimit(req.user, startDate as string)) {
+        return res.status(403).json({ 
+          error: { 
+            code: "FORBIDDEN", 
+            message: "Reception users can only view bookings from the last 14 days" 
+          } 
+        });
+      }
+
+      const bookings = await storage.getBookingsByDateRange(startDate as string, endDate as string, location as string);
+      res.json(bookings);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Get current user's bookings
   app.get("/api/bookings/my", authenticateToken, async (req: AuthRequest, res, next) => {
     try {

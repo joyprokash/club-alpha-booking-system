@@ -31,6 +31,7 @@ import AdminHostesses from "@/pages/admin-hostesses";
 
 // Reception pages
 import ReceptionCalendar from "@/pages/reception-calendar";
+import ReceptionWeekly from "@/pages/reception-weekly";
 
 // Staff pages
 import StaffSchedule from "@/pages/staff-schedule";
@@ -122,6 +123,11 @@ function AppRouter() {
                 <Route path="/admin/calendar">
                   <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
                     <AdminCalendar />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/admin/weekly">
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
+                    <ReceptionWeekly />
                   </ProtectedRoute>
                 </Route>
                 <Route path="/admin/services">

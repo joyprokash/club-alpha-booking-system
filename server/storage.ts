@@ -55,6 +55,7 @@ export interface IStorage {
   getBookingById(id: string): Promise<Booking | undefined>;
   getBookingWithDetails(id: string): Promise<BookingWithDetails | undefined>;
   getBookingsByDate(date: string, location?: string): Promise<BookingWithDetails[]>;
+  getBookingsByDateRange(startDate: string, endDate: string, location?: string): Promise<BookingWithDetails[]>;
   getBookingsByClient(clientId: string): Promise<BookingWithDetails[]>;
   getUpcomingBookings(limit?: number): Promise<BookingWithDetails[]>;
   getAllBookings(): Promise<BookingWithDetails[]>;
@@ -207,6 +208,26 @@ export class DbStorage implements IStorage {
       .where(eq(bookings.date, date));
 
     const result = await query;
+
+    return result
+      .filter(r => r.hostesses && r.users && r.services)
+      .filter(r => !location || r.hostesses?.location === location)
+      .map(r => ({
+        ...r.bookings,
+        hostess: r.hostesses!,
+        client: r.users!,
+        service: r.services!,
+      }));
+  }
+
+  async getBookingsByDateRange(startDate: string, endDate: string, location?: string): Promise<BookingWithDetails[]> {
+    const result = await db
+      .select()
+      .from(bookings)
+      .leftJoin(hostesses, eq(bookings.hostessId, hostesses.id))
+      .leftJoin(users, eq(bookings.clientId, users.id))
+      .leftJoin(services, eq(bookings.serviceId, services.id))
+      .where(and(gte(bookings.date, startDate), lte(bookings.date, endDate)));
 
     return result
       .filter(r => r.hostesses && r.users && r.services)
