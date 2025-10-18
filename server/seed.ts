@@ -94,26 +94,22 @@ async function seed() {
     const scheduleData = [];
     
     for (const hostess of createdHostesses) {
-      // Monday-Friday: Day shift 10:00-18:00, Night shift 19:00-23:00
+      // Monday-Friday: 10:00-23:00
       for (let day = 1; day <= 5; day++) {
         scheduleData.push({
           hostessId: hostess.id,
           weekday: day,
-          startTimeDay: 600, // 10:00
-          endTimeDay: 1080, // 18:00
-          startTimeNight: 1140, // 19:00
-          endTimeNight: 1380, // 23:00
+          startTime: 600, // 10:00
+          endTime: 1380, // 23:00
         });
       }
       
-      // Saturday: Day shift only 12:00-20:00
+      // Saturday: 12:00-20:00
       scheduleData.push({
         hostessId: hostess.id,
         weekday: 6,
-        startTimeDay: 720, // 12:00
-        endTimeDay: 1200, // 20:00
-        startTimeNight: null,
-        endTimeNight: null,
+        startTime: 720, // 12:00
+        endTime: 1200, // 20:00
       });
       
       // Sunday: Off

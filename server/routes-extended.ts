@@ -81,11 +81,10 @@ export function registerExtendedRoutes(app: Express) {
           }
 
           // Parse weekly schedule for each day
-          const days = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+          const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
           
           for (let i = 0; i < days.length; i++) {
-            const dayDay = row[`${days[i]}_day`]?.trim();
-            const dayNight = row[`${days[i]}_night`]?.trim();
+            const dayValue = row[days[i]]?.trim();
 
             const parseTimeSlot = (slot: string) => {
               if (!slot) return null;
@@ -96,16 +95,13 @@ export function registerExtendedRoutes(app: Express) {
               return { start, end };
             };
 
-            const daySlot = parseTimeSlot(dayDay);
-            const nightSlot = parseTimeSlot(dayNight);
+            const timeSlot = parseTimeSlot(dayValue);
 
             await storage.upsertWeeklySchedule({
               hostessId: hostess.id,
               weekday: i,
-              startTimeDay: daySlot?.start || null,
-              endTimeDay: daySlot?.end || null,
-              startTimeNight: nightSlot?.start || null,
-              endTimeNight: nightSlot?.end || null,
+              startTime: timeSlot?.start || null,
+              endTime: timeSlot?.end || null,
             });
           }
 
@@ -143,7 +139,7 @@ export function registerExtendedRoutes(app: Express) {
       );
 
       const csvRows: string[] = [];
-      csvRows.push("id,hostess,mon_day,mon_night,tue_day,tue_night,wed_day,wed_night,thu_day,thu_night,fri_day,fri_night,sat_day,sat_night,sun_day,sun_night");
+      csvRows.push("id,hostess,monday,tuesday,wednesday,thursday,friday,saturday,sunday");
 
       for (const hostess of sorted) {
         const schedule = await storage.getWeeklyScheduleByHostess(hostess.id);
@@ -153,14 +149,12 @@ export function registerExtendedRoutes(app: Express) {
         for (const day of days) {
           const daySchedule = schedule.find(s => s.weekday === day);
           
-          const formatSlot = (start: number | null, end: number | null, loc: string) => {
+          const formatSlot = (start: number | null, end: number | null) => {
             if (!start || !end) return "";
-            return `${minutesToTime(start)}-${minutesToTime(end)},${loc}`;
+            return `${minutesToTime(start)}-${minutesToTime(end)}`;
           };
 
-          const locationCode = hostess.location === "DOWNTOWN" ? "D" : "W";
-          row.push(formatSlot(daySchedule?.startTimeDay || null, daySchedule?.endTimeDay || null, locationCode));
-          row.push(formatSlot(daySchedule?.startTimeNight || null, daySchedule?.endTimeNight || null, locationCode));
+          row.push(formatSlot(daySchedule?.startTime || null, daySchedule?.endTime || null));
         }
 
         csvRows.push(row.join(","));

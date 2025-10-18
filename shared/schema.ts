@@ -88,10 +88,8 @@ export const weeklySchedule = pgTable("weekly_schedule", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   hostessId: varchar("hostess_id").notNull().references(() => hostesses.id),
   weekday: integer("weekday").notNull(), // 0=Sun, 1=Mon, ..., 6=Sat
-  startTimeDay: integer("start_time_day"), // Day shift start (minutes from midnight)
-  endTimeDay: integer("end_time_day"), // Day shift end
-  startTimeNight: integer("start_time_night"), // Night shift start
-  endTimeNight: integer("end_time_night"), // Night shift end
+  startTime: integer("start_time"), // Shift start (minutes from midnight)
+  endTime: integer("end_time"), // Shift end (minutes from midnight)
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   uniqueHostessWeekday: unique("unique_hostess_weekday").on(table.hostessId, table.weekday),

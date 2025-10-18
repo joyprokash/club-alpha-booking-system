@@ -131,8 +131,8 @@ export default function HostessProfile() {
                           <div key={schedule.id} className="flex items-center gap-2">
                             <span className="font-medium w-12">{days[schedule.weekday]}:</span>
                             <span className="text-muted-foreground font-mono text-xs">
-                              {schedule.startTimeDay && schedule.endTimeDay
-                                ? `${Math.floor(schedule.startTimeDay / 60)}:${(schedule.startTimeDay % 60).toString().padStart(2, '0')}–${Math.floor(schedule.endTimeDay / 60)}:${(schedule.endTimeDay % 60).toString().padStart(2, '0')}`
+                              {schedule.startTime && schedule.endTime
+                                ? `${Math.floor(schedule.startTime / 60)}:${(schedule.startTime % 60).toString().padStart(2, '0')}–${Math.floor(schedule.endTime / 60)}:${(schedule.endTime % 60).toString().padStart(2, '0')}`
                                 : "Closed"}
                             </span>
                           </div>
