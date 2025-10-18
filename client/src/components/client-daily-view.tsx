@@ -32,8 +32,8 @@ export function ClientDailyView({ locationFilter }: ClientDailyViewProps) {
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-  const { data: bookings } = useQuery<Booking[]>({
-    queryKey: ["/api/bookings", { date: dateStr }],
+  const { data: bookings, isLoading: bookingsLoading } = useQuery<Booking[]>({
+    queryKey: ["/api/bookings?date=" + dateStr],
   });
 
   const sortedHostesses = useMemo(() => 
@@ -114,6 +114,12 @@ export function ClientDailyView({ locationFilter }: ClientDailyViewProps) {
         <Card>
           <div className="p-12 text-center text-muted-foreground">
             No hostesses available in this location
+          </div>
+        </Card>
+      ) : bookingsLoading ? (
+        <Card>
+          <div className="p-12 text-center text-muted-foreground">
+            Loading availability...
           </div>
         </Card>
       ) : (
