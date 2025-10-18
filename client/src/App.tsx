@@ -90,8 +90,9 @@ function AppRouter() {
     "--sidebar-width-icon": "4rem",
   } as React.CSSProperties;
 
-  const needsSidebar = user && ["/admin", "/reception", "/staff"].some(path => 
-    location.startsWith(path)
+  const needsSidebar = user && (
+    ["/admin", "/reception", "/staff"].some(path => location.startsWith(path)) ||
+    (user.role !== "CLIENT" && (location.startsWith("/hostesses") || location.startsWith("/hostess/")))
   );
 
   if (needsSidebar) {
@@ -158,6 +159,16 @@ function AppRouter() {
                 <Route path="/reception/calendar">
                   <ProtectedRoute allowedRoles={["RECEPTION"]}>
                     <ReceptionCalendar />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/hostesses">
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION", "CLIENT"]}>
+                    <Hostesses />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/hostess/:slug">
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION", "CLIENT"]}>
+                    <HostessProfile />
                   </ProtectedRoute>
                 </Route>
 

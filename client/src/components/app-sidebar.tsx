@@ -75,9 +75,14 @@ export function AppSidebar() {
       icon: Calendar,
     },
     {
-      title: "Hostesses",
-      url: "/admin/hostesses",
+      title: "Browse Hostesses",
+      url: "/hostesses",
       icon: Users,
+    },
+    {
+      title: "Manage Hostesses",
+      url: "/admin/hostesses",
+      icon: Settings,
     },
     {
       title: "Clients",
