@@ -22,6 +22,7 @@ interface ClientDailyViewProps {
 export function ClientDailyView({ locationFilter }: ClientDailyViewProps) {
   const [, setLocation] = useLocation();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   const { data: hostesses } = useQuery<Hostess[]>({
     queryKey: locationFilter === "all" 
@@ -80,7 +81,7 @@ export function ClientDailyView({ locationFilter }: ClientDailyViewProps) {
     <div className="space-y-4">
       {/* Date Picker */}
       <div className="flex items-center gap-4">
-        <Popover>
+        <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -95,7 +96,12 @@ export function ClientDailyView({ locationFilter }: ClientDailyViewProps) {
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
+              onSelect={(date) => {
+                if (date) {
+                  setSelectedDate(date);
+                  setDatePickerOpen(false);
+                }
+              }}
               disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
               initialFocus
             />
