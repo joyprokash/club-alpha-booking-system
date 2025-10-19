@@ -286,8 +286,8 @@ export default function AdminCalendar() {
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-auto">
-        <div className="flex min-h-full">
+      <div className="flex-1 overflow-auto relative">
+        <div className="inline-flex min-w-full">
           {/* Time Column */}
           <div className="w-20 flex-shrink-0 border-r bg-muted/30 sticky left-0 z-30">
             <div className={`${currentZoom.headerHeight} border-b bg-card sticky top-0 z-40`} />
@@ -301,10 +301,8 @@ export default function AdminCalendar() {
             ))}
           </div>
 
-          {/* Hostess Columns - Wrapper for horizontal scroll */}
-          <div className="flex-1 overflow-x-auto">
-            <div className="flex min-w-max">
-              {sortedHostesses.map((hostess) => (
+          {/* Hostess Columns */}
+          {sortedHostesses.map((hostess) => (
                 <div 
                   key={hostess.id} 
                   className="border-r flex-shrink-0 relative"
@@ -369,8 +367,6 @@ export default function AdminCalendar() {
                   })}
                 </div>
               ))}
-            </div>
-          </div>
         </div>
       </div>
 

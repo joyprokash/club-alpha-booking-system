@@ -216,15 +216,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create hostess (admin only)
   app.post("/api/hostesses", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
     try {
-      const data = insertHostessSchema.parse(req.body);
-      const hostess = await storage.createHostess(data);
+      const schema = insertHostessSchema.extend({
+        email: z.string().email(),
+        password: z.string().min(8),
+      });
+      const { email, password, ...hostessData } = schema.parse(req.body);
+      
+      // Check for duplicate email first
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ 
+          error: { 
+            code: "DUPLICATE_EMAIL", 
+            message: `A user with email ${email} already exists` 
+          } 
+        });
+      }
+
+      // Create the STAFF user
+      const passwordHash = await bcrypt.hash(password, 10);
+      let user;
+      try {
+        user = await storage.createUser({
+          email,
+          passwordHash,
+          role: "STAFF",
+        });
+      } catch (error) {
+        // Handle unique constraint violation on email (case-insensitive)
+        if (error instanceof Error && error.message.toLowerCase().includes('unique')) {
+          return res.status(409).json({ 
+            error: { 
+              code: "DUPLICATE_EMAIL", 
+              message: `A user with email ${email} already exists` 
+            } 
+          });
+        }
+        throw error;
+      }
+
+      // Create the hostess linked to the user (with rollback on failure)
+      let hostess;
+      try {
+        hostess = await storage.createHostess({
+          ...hostessData,
+          userId: user.id,
+        });
+      } catch (error) {
+        // Rollback: delete the user if hostess creation fails
+        await storage.deleteUser(user.id);
+        throw error;
+      }
 
       await storage.createAuditLog({
         userId: req.user?.id,
         action: "CREATE",
         entity: "hostess",
         entityId: hostess.id,
-        meta: { data },
+        meta: { email, displayName: hostessData.displayName },
       });
 
       res.json(hostess);

@@ -24,6 +24,8 @@ const hostessSchema = z.object({
   location: z.enum(["DOWNTOWN", "WEST_END"]),
   bio: z.string().optional(),
   specialties: z.string().optional(),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 type HostessFormData = z.infer<typeof hostessSchema>;
@@ -181,6 +183,8 @@ export default function AdminHostesses() {
       location: "DOWNTOWN",
       bio: "",
       specialties: "",
+      email: "",
+      password: "",
     },
   });
 
@@ -264,6 +268,35 @@ export default function AdminHostesses() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Staff Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="staff@example.com" data-testid="input-email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Staff Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Min 8 characters" data-testid="input-password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <FormField
                     control={form.control}
