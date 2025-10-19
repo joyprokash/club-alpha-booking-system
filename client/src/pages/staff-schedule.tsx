@@ -23,12 +23,7 @@ export default function StaffSchedule() {
     queryKey: ["/api/staff/hostess"],
   });
 
-  // Get staff's bookings (filtered on backend to their linked hostess)
-  const { data: myTodaysBookings = [] } = useQuery<BookingWithDetails[]>({
-    queryKey: ["/api/staff/bookings/today"],
-    enabled: !!linkedHostess,
-  });
-
+  // Get staff's upcoming bookings (filtered on backend to their linked hostess)
   const { data: myUpcomingBookings = [] } = useQuery<BookingWithDetails[]>({
     queryKey: ["/api/staff/bookings/upcoming"],
     enabled: !!linkedHostess,
@@ -124,61 +119,13 @@ export default function StaffSchedule() {
           </CardContent>
         </Card>
 
-        {/* Today's Appointments */}
+        {/* Upcoming Appointments */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Your Schedule Today
+              Your Upcoming Appointments
             </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {myTodaysBookings.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No appointments today</p>
-            ) : (
-              <div className="space-y-3">
-                {myTodaysBookings.map((booking) => (
-                  <div
-                    key={booking.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                    data-testid={`booking-${booking.id}`}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono font-medium">
-                          {formatTimeRange(booking.startTime, booking.endTime)}
-                        </span>
-                        <Badge variant="outline">{booking.service.name}</Badge>
-                        <Badge
-                          variant={
-                            booking.status === "CONFIRMED" ? "default" :
-                            booking.status === "PENDING" ? "secondary" :
-                            "outline"
-                          }
-                        >
-                          {booking.status}
-                        </Badge>
-                      </div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        Client: {booking.client.email}
-                      </div>
-                      {booking.notes && (
-                        <div className="mt-2 text-sm">
-                          <span className="font-medium">Notes:</span> {booking.notes}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Appointments */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Appointments</CardTitle>
           </CardHeader>
           <CardContent>
             {myUpcomingBookings.length === 0 ? (
