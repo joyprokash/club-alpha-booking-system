@@ -17,6 +17,9 @@ import type {
   AuditLog,
   InsertAuditLog,
   HostessWithSchedule,
+  PhotoUpload,
+  InsertPhotoUpload,
+  PhotoUploadWithDetails,
 } from "@shared/schema";
 import {
   users,
@@ -26,6 +29,7 @@ import {
   timeOff,
   weeklySchedule,
   auditLog,
+  photoUploads,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -73,6 +77,15 @@ export interface IStorage {
   // Audit Log operations
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
   getAuditLogs(filters?: { entity?: string; entityId?: string; userId?: string }): Promise<AuditLog[]>;
+
+  // Photo Upload operations
+  getPhotoUploadById(id: string): Promise<PhotoUpload | undefined>;
+  getPhotoUploadWithDetails(id: string): Promise<PhotoUploadWithDetails | undefined>;
+  getPendingPhotoUploads(): Promise<PhotoUploadWithDetails[]>;
+  getPhotoUploadsByHostess(hostessId: string): Promise<PhotoUpload[]>;
+  createPhotoUpload(data: InsertPhotoUpload): Promise<PhotoUpload>;
+  approvePhotoUpload(id: string, reviewerId: string): Promise<PhotoUpload>;
+  rejectPhotoUpload(id: string, reviewerId: string): Promise<PhotoUpload>;
 
   // Search operations
   searchClients(query: string): Promise<User[]>;
@@ -381,6 +394,102 @@ export class DbStorage implements IStorage {
     }
 
     return await query.orderBy(desc(auditLog.createdAt));
+  }
+
+  // Photo Upload operations
+  async getPhotoUploadById(id: string): Promise<PhotoUpload | undefined> {
+    const result = await db.select().from(photoUploads).where(eq(photoUploads.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getPhotoUploadWithDetails(id: string): Promise<PhotoUploadWithDetails | undefined> {
+    const result = await db
+      .select()
+      .from(photoUploads)
+      .leftJoin(hostesses, eq(photoUploads.hostessId, hostesses.id))
+      .leftJoin(users, eq(photoUploads.reviewedBy, users.id))
+      .where(eq(photoUploads.id, id))
+      .limit(1);
+    
+    if (!result[0] || !result[0].hostesses) return undefined;
+    
+    return {
+      ...result[0].photo_uploads,
+      hostess: result[0].hostesses,
+      reviewer: result[0].users || undefined,
+    };
+  }
+
+  async getPendingPhotoUploads(): Promise<PhotoUploadWithDetails[]> {
+    const results = await db
+      .select()
+      .from(photoUploads)
+      .leftJoin(hostesses, eq(photoUploads.hostessId, hostesses.id))
+      .leftJoin(users, eq(photoUploads.reviewedBy, users.id))
+      .where(eq(photoUploads.status, 'PENDING'))
+      .orderBy(desc(photoUploads.uploadedAt));
+    
+    return results
+      .filter(r => r.hostesses)
+      .map(r => ({
+        ...r.photo_uploads,
+        hostess: r.hostesses!,
+        reviewer: r.users || undefined,
+      }));
+  }
+
+  async getPhotoUploadsByHostess(hostessId: string): Promise<PhotoUpload[]> {
+    return await db
+      .select()
+      .from(photoUploads)
+      .where(eq(photoUploads.hostessId, hostessId))
+      .orderBy(desc(photoUploads.uploadedAt));
+  }
+
+  async createPhotoUpload(data: InsertPhotoUpload): Promise<PhotoUpload> {
+    const result = await db.insert(photoUploads).values(data).returning();
+    return result[0];
+  }
+
+  async approvePhotoUpload(id: string, reviewerId: string): Promise<PhotoUpload> {
+    // Get the upload
+    const upload = await this.getPhotoUploadById(id);
+    if (!upload) {
+      throw new Error('Photo upload not found');
+    }
+
+    // Update the upload status
+    const updatedUpload = await db
+      .update(photoUploads)
+      .set({ 
+        status: 'APPROVED', 
+        reviewedBy: reviewerId, 
+        reviewedAt: new Date() 
+      })
+      .where(eq(photoUploads.id, id))
+      .returning();
+
+    // Update the hostess photoUrl
+    await db
+      .update(hostesses)
+      .set({ photoUrl: upload.photoUrl })
+      .where(eq(hostesses.id, upload.hostessId));
+
+    return updatedUpload[0];
+  }
+
+  async rejectPhotoUpload(id: string, reviewerId: string): Promise<PhotoUpload> {
+    const result = await db
+      .update(photoUploads)
+      .set({ 
+        status: 'REJECTED', 
+        reviewedBy: reviewerId, 
+        reviewedAt: new Date() 
+      })
+      .where(eq(photoUploads.id, id))
+      .returning();
+    
+    return result[0];
   }
 
   // Search operations
