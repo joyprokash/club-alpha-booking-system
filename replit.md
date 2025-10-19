@@ -26,11 +26,12 @@ The platform is built with a React 18, TypeScript, Vite frontend using TanStack 
 - **Double-Booking Prevention**: Utilizes serializable transactions with advisory locks per `(hostessId, date)`, validating against existing bookings, time-off blocks, and weekly schedules to prevent conflicts.
 - **Admin Daily Grid**: Features sticky time and hostess headers, horizontal scrolling, color-coded cells, quick booking modal integration, and 3-level zoom controls.
 - **Quick Booking Modal**: Pre-fills booking details, offers client autocomplete, service selection, notes field, and validates conflicts.
-- **Client Booking Flow**: Allows browsing hostesses by location, viewing profiles, selecting dates, choosing services, picking available time slots, adding notes, and confirming bookings.
+- **Client Booking Flow**: Allows browsing hostesses by location, viewing profiles, selecting dates, choosing services, picking available time slots, adding notes, and confirming bookings. Service prices are prominently displayed on service cards and in the booking form dropdown.
 - **Import/Export Schedules**: Supports CSV import and export of weekly schedules. Format: `id,hostess,monday,tuesday,wednesday,thursday,friday,saturday,sunday` with time ranges like "10:00-18:00". Idempotent upserts by (hostessId, weekday) with row-by-row error capture.
 - **Role-Based Access Control**: Defines distinct permissions for ADMIN, RECEPTION, STAFF, and CLIENT roles, including specific dashboard views and functionalities.
 - **Password Reset**: Admins can reset any user's password, requiring 8+ characters and bcrypt hashing, with all actions logged.
 - **Photo Upload & Approval**: STAFF users can upload profile photos for their linked hostess via a secure endpoint. Uploads are stored with PENDING status in the `photoUploads` table. ADMIN users review pending uploads at `/admin/photo-approvals` and can approve or reject them. When approved, the photo is applied to the hostess profile and status changes to APPROVED. The system enforces ownership verification to ensure staff can only upload for their own linked hostess.
+- **Service Pricing**: Services store prices as integer cents (priceCents) in the database and display as dollars with 2 decimal places. ADMIN users can easily create and edit service prices through the Services Management page. Prices are prominently displayed to clients on service cards (hostess profile page) and in the booking form dropdown.
 - **Analytics Dashboard**: Provides revenue metrics, booking trends, and cancellation rates with `recharts` visualization.
 
 ## External Dependencies
