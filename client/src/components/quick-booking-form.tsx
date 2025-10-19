@@ -63,6 +63,7 @@ export function QuickBookingForm({ hostessId, date, startTime, onSuccess, onCanc
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings/range'] });
       toast({
         title: "Booking created",
         description: "Appointment scheduled successfully",

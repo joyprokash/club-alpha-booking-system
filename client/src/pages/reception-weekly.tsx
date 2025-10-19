@@ -31,8 +31,8 @@ export default function ReceptionWeekly() {
   } | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
 
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 }); // Sunday
-  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 });
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
+  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
@@ -47,9 +47,19 @@ export default function ReceptionWeekly() {
   const endDateStr = format(weekEnd, "yyyy-MM-dd");
 
   const { data: bookings } = useQuery<BookingWithDetails[]>({
-    queryKey: locationFilter === "all"
-      ? [`/api/bookings/range?startDate=${startDateStr}&endDate=${endDateStr}`]
-      : [`/api/bookings/range?startDate=${startDateStr}&endDate=${endDateStr}&location=${locationFilter}`],
+    queryKey: ['/api/bookings/range', startDateStr, endDateStr, locationFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        startDate: startDateStr,
+        endDate: endDateStr,
+      });
+      if (locationFilter !== "all") {
+        params.append("location", locationFilter);
+      }
+      const response = await fetch(`/api/bookings/range?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch bookings");
+      return response.json();
+    },
   });
 
   const sortedHostesses = hostesses?.slice().sort((a, b) =>
@@ -102,7 +112,7 @@ export default function ReceptionWeekly() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/bookings/range`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/bookings/range'] });
       toast({ title: "Booking canceled successfully" });
       setEditBookingOpen(false);
     },
