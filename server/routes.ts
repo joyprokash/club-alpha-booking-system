@@ -852,8 +852,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== ADMIN ENDPOINTS ====================
   
-  // Get pending photo uploads (admin only)
-  app.get("/api/admin/photo-uploads/pending", authenticateToken, requireRole("ADMIN"), async (req, res, next) => {
+  // Get pending photo uploads (admin and reception)
+  app.get("/api/admin/photo-uploads/pending", authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req, res, next) => {
     try {
       const uploads = await storage.getPendingPhotoUploads();
       res.json(uploads);
@@ -862,8 +862,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Approve photo upload (admin only)
-  app.post("/api/admin/photo-uploads/:id/approve", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+  // Approve photo upload (admin and reception)
+  app.post("/api/admin/photo-uploads/:id/approve", authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req: AuthRequest, res, next) => {
     try {
       const { id } = req.params;
       
@@ -883,8 +883,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Reject photo upload (admin only)
-  app.post("/api/admin/photo-uploads/:id/reject", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+  // Reject photo upload (admin and reception)
+  app.post("/api/admin/photo-uploads/:id/reject", authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req: AuthRequest, res, next) => {
     try {
       const { id } = req.params;
       

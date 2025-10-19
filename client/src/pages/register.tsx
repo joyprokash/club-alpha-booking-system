@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Footer } from "@/components/footer";
 import logoUrl from "@assets/club-alpha-badge (1)_1760718368973.png";
 
 const registerSchema = z.object({
@@ -60,11 +61,12 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="absolute top-4 right-4">
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div>
       
+      <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-3">
           <div className="flex justify-center">
@@ -156,6 +158,9 @@ export default function Register() {
           </div>
         </CardContent>
       </Card>
+      </div>
+      
+      <Footer />
     </div>
   );
 }

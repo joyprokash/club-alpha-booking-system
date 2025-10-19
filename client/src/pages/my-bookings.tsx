@@ -10,6 +10,7 @@ import { Calendar, MapPin, Clock, MessageSquare, XCircle } from "lucide-react";
 import { formatDate, formatTimeRange } from "@/lib/time-utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Footer } from "@/components/footer";
 import type { BookingWithDetails } from "@shared/schema";
 
 export default function MyBookings() {
@@ -77,8 +78,9 @@ export default function MyBookings() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex-1 p-8">
+        <div className="max-w-4xl mx-auto space-y-8">
         <div>
           <h1 className="text-hero font-bold mb-2">My Bookings</h1>
           <p className="text-body-large text-muted-foreground">
@@ -283,6 +285,9 @@ export default function MyBookings() {
           </DialogContent>
         </Dialog>
       </div>
+      </div>
+      
+      <Footer />
     </div>
   );
 }

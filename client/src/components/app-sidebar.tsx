@@ -95,6 +95,11 @@ export function AppSidebar() {
       icon: UserCog,
     },
     {
+      title: "Photo Approvals",
+      url: "/admin/photo-approvals",
+      icon: ImageIcon,
+    },
+    {
       title: "Import Schedule",
       url: "/admin/import",
       icon: FileUp,

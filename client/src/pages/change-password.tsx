@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Footer } from "@/components/footer";
 import { Lock } from "lucide-react";
 
 const changePasswordSchema = z.object({
@@ -61,7 +62,8 @@ export default function ChangePassword() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mx-auto mb-4">
@@ -125,6 +127,9 @@ export default function ChangePassword() {
           </Form>
         </CardContent>
       </Card>
+      </div>
+      
+      <Footer />
     </div>
   );
 }

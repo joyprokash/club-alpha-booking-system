@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { Footer } from "@/components/footer";
 
 const resetPasswordSchema = z.object({
   oldPassword: z.string().min(1, "Current password is required"),
@@ -57,7 +58,8 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex flex-col bg-background">
+      <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Reset Password</CardTitle>
@@ -135,6 +137,9 @@ export default function ResetPassword() {
           </Form>
         </CardContent>
       </Card>
+      </div>
+      
+      <Footer />
     </div>
   );
 }

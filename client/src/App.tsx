@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Footer } from "@/components/footer";
 
 // Auth pages
 import Login from "@/pages/login";
@@ -163,7 +164,7 @@ function AppRouter() {
                   </ProtectedRoute>
                 </Route>
                 <Route path="/admin/photo-approvals">
-                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
                     <AdminPhotoApprovals />
                   </ProtectedRoute>
                 </Route>
@@ -195,6 +196,7 @@ function AppRouter() {
                 <Route component={NotFound} />
               </Switch>
             </main>
+            <Footer />
           </div>
         </div>
       </SidebarProvider>

@@ -9,6 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { MapPin, Clock, ArrowLeft } from "lucide-react";
 import { BookingForm } from "@/components/booking-form";
 import { getCurrentDateToronto, getDayOfWeek } from "@/lib/time-utils";
+import { Footer } from "@/components/footer";
 import type { HostessWithSchedule, Service } from "@shared/schema";
 
 export default function HostessProfile() {
@@ -66,8 +67,9 @@ export default function HostessProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto p-8">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex-1">
+        <div className="max-w-5xl mx-auto p-8">
         <Button
           variant="ghost"
           onClick={() => setLocation("/hostesses")}
@@ -228,6 +230,9 @@ export default function HostessProfile() {
           </div>
         </div>
       </div>
+      </div>
+      
+      <Footer />
     </div>
   );
 }

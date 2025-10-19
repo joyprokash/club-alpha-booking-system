@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MapPin, LayoutGrid, Calendar, LogOut } from "lucide-react";
 import { ClientDailyView } from "@/components/client-daily-view";
 import { useAuth } from "@/lib/auth-context";
+import { Footer } from "@/components/footer";
 import type { Hostess } from "@shared/schema";
 
 type ViewMode = "gallery" | "daily";
@@ -30,8 +31,8 @@ export default function Hostesses() {
   ) || [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-8">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex-1 max-w-7xl mx-auto p-8 w-full">
         <div className="mb-8">
           <h1 className="text-hero font-bold mb-2">Find Your Perfect Time</h1>
           <p className="text-body-large text-muted-foreground">
@@ -163,6 +164,7 @@ export default function Hostesses() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

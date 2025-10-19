@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { Footer } from "@/components/footer";
 import { User, Calendar, Lock } from "lucide-react";
 import logoUrl from "@assets/club-alpha-badge (1)_1760718368973.png";
 
@@ -98,12 +99,12 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="absolute top-4 right-4">
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div>
 
-      <div className="container mx-auto px-4 py-12 max-w-6xl">
+      <div className="flex-1 container mx-auto px-4 py-12 max-w-6xl">
         <div className="flex flex-col items-center text-center mb-8">
           <img src={logoUrl} alt="Club Alpha" className="h-24 w-24 mb-6" />
           <h1 className="text-4xl font-bold mb-3">Welcome to Club Alpha</h1>
@@ -233,6 +234,7 @@ export default function Home() {
           </Button>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
