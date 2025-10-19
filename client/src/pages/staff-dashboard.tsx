@@ -77,31 +77,31 @@ export default function StaffDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Today's Appointments */}
           <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-0 text-white">
-            <CardContent className="p-6 text-center">
-              <Calendar className="h-12 w-12 mx-auto mb-4 opacity-80" />
-              <div className="text-5xl font-bold mb-2">{todayBookings.length}</div>
-              <div className="text-lg font-medium">Your Appointments Today</div>
+            <CardContent className="p-4 text-center">
+              <Calendar className="h-6 w-6 mx-auto mb-2 opacity-80" />
+              <div className="text-2xl font-bold mb-1">{todayBookings.length}</div>
+              <div className="text-sm font-medium">Your Appointments Today</div>
             </CardContent>
           </Card>
 
           {/* Tomorrow's Bookings */}
           <Card className="bg-gradient-to-br from-pink-500 to-pink-600 border-0 text-white">
-            <CardContent className="p-6 text-center">
-              <Clock className="h-12 w-12 mx-auto mb-4 opacity-80" />
-              <div className="text-5xl font-bold mb-2">{tomorrowBookings.length}</div>
-              <div className="text-lg font-medium">Tomorrow's Bookings</div>
+            <CardContent className="p-4 text-center">
+              <Clock className="h-6 w-6 mx-auto mb-2 opacity-80" />
+              <div className="text-2xl font-bold mb-1">{tomorrowBookings.length}</div>
+              <div className="text-sm font-medium">Tomorrow's Bookings</div>
             </CardContent>
           </Card>
 
           {/* Today's Time Off */}
           <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 text-white">
-            <CardContent className="p-6 text-center">
-              <CalendarX className="h-12 w-12 mx-auto mb-4 opacity-80" />
-              <div className="text-5xl font-bold mb-2">{todayTimeOff.length}</div>
-              <div className="text-lg font-medium">Today's Time Off</div>
+            <CardContent className="p-4 text-center">
+              <CalendarX className="h-6 w-6 mx-auto mb-2 opacity-80" />
+              <div className="text-2xl font-bold mb-1">{todayTimeOff.length}</div>
+              <div className="text-sm font-medium">Today's Time Off</div>
             </CardContent>
           </Card>
         </div>
