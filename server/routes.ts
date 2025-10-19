@@ -78,7 +78,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const passwordHash = await bcrypt.hash(password, 10);
+      const username = email.split('@')[0]; // Extract username from email
       const user = await storage.createUser({
+        username,
         email,
         passwordHash,
         role: "CLIENT",
@@ -95,12 +97,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Login
   app.post("/api/auth/login", authLimiter, async (req, res, next) => {
     try {
-      const { email, password } = z.object({
-        email: z.string().email(),
+      const { username, password } = z.object({
+        username: z.string().min(1),
         password: z.string(),
       }).parse(req.body);
 
-      const user = await storage.getUserByEmail(email);
+      const user = await storage.getUserByUsername(username);
       if (!user) {
         return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid credentials" } });
       }
@@ -235,9 +237,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Create the STAFF user
       const passwordHash = await bcrypt.hash(password, 10);
+      const username = email.split('@')[0]; // Extract username from email
       let user;
       try {
         user = await storage.createUser({
+          username,
           email,
           passwordHash,
           role: "STAFF",
@@ -558,7 +562,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (req.user?.role === "ADMIN" || req.user?.role === "RECEPTION") {
             const tempPassword = Math.random().toString(36).slice(-10);
             const passwordHash = await bcrypt.hash(tempPassword, 10);
+            const username = data.clientEmail.split('@')[0]; // Extract username from email
             client = await storage.createUser({
+              username,
               email: data.clientEmail,
               passwordHash,
               role: "CLIENT",
