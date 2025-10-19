@@ -124,7 +124,7 @@ export function QuickBookingForm({ hostessId, date, startTime, onSuccess, onCanc
                       setSearchQuery(e.target.value);
                     }}
                   />
-                  {clients && clients.length > 0 && (
+                  {clients && clients.length > 0 && searchQuery.length >= 2 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-auto z-50">
                       {clients.map((client) => (
                         <button
@@ -132,9 +132,10 @@ export function QuickBookingForm({ hostessId, date, startTime, onSuccess, onCanc
                           type="button"
                           className="w-full px-3 py-2 text-left text-sm hover:bg-accent"
                           onClick={() => {
-                            field.onChange(client.email);
-                            setSearchQuery("");
+                            form.setValue("clientEmail", client.email, { shouldValidate: true });
+                            setSearchQuery(client.email);
                           }}
+                          data-testid={`button-client-${client.id}`}
                         >
                           {client.email}
                         </button>
