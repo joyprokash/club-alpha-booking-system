@@ -100,7 +100,7 @@ export default function Hostesses() {
               size="default"
               onClick={() => {
                 logout();
-                setLocation("/");
+                setLocation("/login");
               }}
               className="gap-2 ml-auto"
               data-testid="button-logout"
