@@ -13,7 +13,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Clock, ArrowLeft, DollarSign, CheckCircle2 } from "lucide-react";
+import { MapPin, Clock, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { getCurrentDateToronto, getDayOfWeek, generateTimeSlots, minutesToTime, parseTimeToMinutes, GRID_START_TIME, GRID_END_TIME, SLOT_DURATION } from "@/lib/time-utils";
 import { Footer } from "@/components/footer";
 import { useToast } from "@/hooks/use-toast";
@@ -332,10 +332,9 @@ export default function HostessProfile() {
                                           <div className="flex flex-col gap-1.5">
                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                               <Clock className="h-4 w-4 flex-shrink-0" />
-                                              <span className="font-mono">{service.durationMin} minutes</span>
+                                              <span>{service.durationMin} minutes</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                              <DollarSign className="h-4 w-4 flex-shrink-0 text-primary" />
                                               <span className="text-lg font-bold text-primary">
                                                 ${(service.priceCents / 100).toFixed(2)}
                                               </span>
