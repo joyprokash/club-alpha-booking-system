@@ -129,11 +129,11 @@ export default function AdminPhotoApprovals() {
                                 {formatDistanceToNow(new Date(upload.uploadedAt), { addSuffix: true })}
                               </span>
                             </p>
-                            <p>
+                            <div>
                               Status: <Badge variant="secondary" data-testid={`badge-status-${upload.id}`}>
                                 {upload.status}
                               </Badge>
-                            </p>
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2 mt-4">
