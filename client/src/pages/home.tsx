@@ -15,7 +15,7 @@ import { User, Calendar, Lock, Users, Copy, Check } from "lucide-react";
 import logoUrl from "@assets/club-alpha-badge (1)_1760718368973.png";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -25,7 +25,7 @@ const loginCredentials = [
   {
     role: "ADMIN",
     icon: Lock,
-    email: "admin@clubalpha.ca",
+    username: "admin",
     password: "admin123",
     description: "Full platform access, analytics, user management",
     color: "text-red-500",
@@ -33,7 +33,7 @@ const loginCredentials = [
   {
     role: "RECEPTION",
     icon: Calendar,
-    email: "reception@clubalpha.ca",
+    username: "reception",
     password: "reception123",
     description: "Calendar view, create bookings, manage schedules",
     color: "text-blue-500",
@@ -41,7 +41,7 @@ const loginCredentials = [
   {
     role: "STAFF",
     icon: Users,
-    email: "staff@clubalpha.ca",
+    username: "staff",
     password: "staff123",
     description: "Manage personal schedule, upload photos, view bookings",
     color: "text-green-500",
@@ -49,7 +49,7 @@ const loginCredentials = [
   {
     role: "CLIENT",
     icon: User,
-    email: "client1@example.com",
+    username: "client1",
     password: "client123",
     description: "Browse hostesses, book appointments, view bookings",
     color: "text-purple-500",
@@ -66,7 +66,7 @@ export default function Home() {
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
@@ -74,7 +74,7 @@ export default function Home() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const result = await login(data.email, data.password);
+      const result = await login(data.username, data.password);
       
       if (result?.requiresPasswordReset) {
         setLocation("/reset-password");
@@ -100,7 +100,7 @@ export default function Home() {
       toast({
         variant: "destructive",
         title: "Login failed",
-        description: error.message || "Invalid email or password",
+        description: error.message || "Invalid username or password",
       });
     } finally {
       setIsLoading(false);
@@ -147,15 +147,15 @@ export default function Home() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="email"
+                    name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Username</FormLabel>
                         <FormControl>
                           <Input
-                            type="email"
-                            placeholder="you@example.com"
-                            data-testid="input-email"
+                            type="text"
+                            placeholder="username"
+                            data-testid="input-username"
                             {...field}
                           />
                         </FormControl>
@@ -232,10 +232,10 @@ export default function Home() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex flex-col gap-1">
-                      <span className="text-xs text-muted-foreground">Email</span>
+                      <span className="text-xs text-muted-foreground">Username</span>
                       <div className="flex items-center gap-2">
-                        <code className="text-sm font-mono bg-muted px-2 py-1 rounded flex-1" data-testid={`text-email-${cred.role.toLowerCase()}`}>
-                          {cred.email}
+                        <code className="text-sm font-mono bg-muted px-2 py-1 rounded flex-1" data-testid={`text-username-${cred.role.toLowerCase()}`}>
+                          {cred.username}
                         </code>
                         <Button
                           variant="ghost"
@@ -243,11 +243,11 @@ export default function Home() {
                           className="h-8 w-8 shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
-                            copyToClipboard(cred.email, `${cred.role}-email`);
+                            copyToClipboard(cred.username, `${cred.role}-username`);
                           }}
-                          data-testid={`button-copy-email-${cred.role.toLowerCase()}`}
+                          data-testid={`button-copy-username-${cred.role.toLowerCase()}`}
                         >
-                          {copiedField === `${cred.role}-email` ? (
+                          {copiedField === `${cred.role}-username` ? (
                             <Check className="h-4 w-4 text-green-500" />
                           ) : (
                             <Copy className="h-4 w-4" />

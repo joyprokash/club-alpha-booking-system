@@ -6,7 +6,7 @@ import type { User } from "@shared/schema";
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ requiresPasswordReset?: boolean; user?: User; role?: string }>;
+  login: (username: string, password: string) => Promise<{ requiresPasswordReset?: boolean; user?: User; role?: string }>;
   logout: () => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   resetPassword: (oldPassword: string, newPassword: string) => Promise<void>;
@@ -22,8 +22,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async ({ email, password }: { email: string; password: string }) => {
-      const response = await apiRequest("POST", "/api/auth/login", { email, password });
+    mutationFn: async ({ username, password }: { username: string; password: string }) => {
+      const response = await apiRequest("POST", "/api/auth/login", { username, password });
       const data = await response.json();
       // Store token in localStorage
       if (data.token) {
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user: user ?? null,
         isLoading,
-        login: (email, password) => loginMutation.mutateAsync({ email, password }),
+        login: (username, password) => loginMutation.mutateAsync({ username, password }),
         logout: () => logoutMutation.mutateAsync(),
         register: (email, password) => registerMutation.mutateAsync({ email, password }),
         resetPassword: (oldPassword, newPassword) => resetPasswordMutation.mutateAsync({ oldPassword, newPassword }),
