@@ -374,6 +374,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/services/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
     try {
       const { id } = req.params;
+      
+      // Check if service is being used by any bookings
+      const bookingsUsingService = await storage.getBookingsByService(id);
+      if (bookingsUsingService.length > 0) {
+        return res.status(400).json({ 
+          error: { 
+            code: "SERVICE_IN_USE", 
+            message: `Cannot delete this service because it is used by ${bookingsUsingService.length} booking(s). Please delete or reassign those bookings first.` 
+          } 
+        });
+      }
+
       await storage.deleteService(id);
 
       await storage.createAuditLog({

@@ -54,6 +54,7 @@ export interface IStorage {
   createService(service: InsertService): Promise<Service>;
   updateService(id: string, data: Partial<Service>): Promise<Service>;
   deleteService(id: string): Promise<void>;
+  getBookingsByService(serviceId: string): Promise<Booking[]>;
 
   // Booking operations
   getBookingById(id: string): Promise<Booking | undefined>;
@@ -181,6 +182,10 @@ export class DbStorage implements IStorage {
 
   async deleteService(id: string): Promise<void> {
     await db.delete(services).where(eq(services.id, id));
+  }
+
+  async getBookingsByService(serviceId: string): Promise<Booking[]> {
+    return await db.select().from(bookings).where(eq(bookings.serviceId, serviceId));
   }
 
   // Booking operations
