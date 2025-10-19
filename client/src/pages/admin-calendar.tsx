@@ -98,7 +98,12 @@ export default function AdminCalendar() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/bookings/day?date=${dateStr}`] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/bookings');
+        }
+      });
       toast({ title: "Booking canceled successfully" });
       setEditBookingOpen(false);
     },

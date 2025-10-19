@@ -68,8 +68,13 @@ export function QuickBookingForm({ hostessId, date, startTime, onSuccess, onCanc
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
-      queryClient.invalidateQueries({ queryKey: ['/api/bookings/range'] });
+      // Invalidate all booking-related queries (handles /api/bookings, /api/bookings/day, /api/bookings/range, etc.)
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/bookings');
+        }
+      });
       toast({
         title: "Booking created",
         description: "Appointment scheduled successfully",

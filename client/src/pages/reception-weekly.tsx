@@ -112,7 +112,12 @@ export default function ReceptionWeekly() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bookings/range'] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/bookings');
+        }
+      });
       toast({ title: "Booking canceled successfully" });
       setEditBookingOpen(false);
     },

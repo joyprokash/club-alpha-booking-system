@@ -123,7 +123,12 @@ export default function AdminUsers() {
       return response.json();
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/bookings');
+        }
+      });
       toast({
         title: "Client bookings reset",
         description: `Successfully deleted ${data.deletedCount} client booking(s)`,

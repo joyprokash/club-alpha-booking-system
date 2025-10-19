@@ -36,7 +36,12 @@ export default function MyBookings() {
       return apiRequest("PATCH", `/api/bookings/${bookingId}/notes`, { notes });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings/my"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/bookings');
+        }
+      });
       toast({ title: "Notes updated successfully" });
       setNotesBookingId(null);
       setNotesText("");
@@ -55,7 +60,12 @@ export default function MyBookings() {
       return apiRequest("POST", `/api/bookings/${bookingId}/cancel`, {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/bookings/my"] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const key = query.queryKey[0];
+          return typeof key === 'string' && key.startsWith('/api/bookings');
+        }
+      });
       toast({ title: "Booking cancelled successfully" });
       setCancelBookingId(null);
     },
