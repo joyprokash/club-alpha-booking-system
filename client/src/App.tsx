@@ -46,6 +46,7 @@ import Home from "@/pages/home";
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, isLoading } = useAuth();
+  const [location] = useLocation();
 
   if (isLoading) {
     return (
@@ -59,8 +60,9 @@ function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode;
     return <Redirect to="/login" />;
   }
 
-  if (user.forcePasswordReset) {
-    return <Redirect to="/reset-password" />;
+  // Redirect to change password if required, but not if already on that page
+  if (user.forcePasswordReset && location !== "/change-password") {
+    return <Redirect to="/change-password" />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

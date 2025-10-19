@@ -23,8 +23,8 @@ async function setupHostessAccounts() {
   for (const hostess of hostessesWithoutAccounts) {
     // Extract first name from display name (e.g., "Amelia" from "Amelia")
     const firstName = hostess.displayName.split(' ')[0];
-    const username = firstName.toLowerCase();
-    const email = `${username}@clubalpha.ca`;
+    const username = firstName; // Use first name as-is, preserving capitalization
+    const email = `${username.toLowerCase()}@clubalpha.ca`;
     
     // Hash the username as the initial password
     const passwordHash = await bcrypt.hash(firstName, 10);
