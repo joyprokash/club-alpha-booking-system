@@ -1,4 +1,4 @@
-import { Calendar, Users, Settings, LayoutDashboard, UserCog, Clock, FileUp, FileDown, LogOut, BarChart3 } from "lucide-react";
+import { Calendar, Users, Settings, LayoutDashboard, UserCog, Clock, FileUp, FileDown, LogOut, BarChart3, ImageIcon } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   Sidebar,
@@ -50,6 +50,11 @@ export function AppSidebar() {
       title: "Services",
       url: "/admin/services",
       icon: Settings,
+    },
+    {
+      title: "Photo Approvals",
+      url: "/admin/photo-approvals",
+      icon: ImageIcon,
     },
     {
       title: "Import Schedule",
