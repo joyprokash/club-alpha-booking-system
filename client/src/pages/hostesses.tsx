@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, LayoutGrid, Calendar } from "lucide-react";
+import { MapPin, LayoutGrid, Calendar, LogOut } from "lucide-react";
 import { ClientDailyView } from "@/components/client-daily-view";
+import { useAuth } from "@/lib/auth-context";
 import type { Hostess } from "@shared/schema";
 
 type ViewMode = "gallery" | "daily";
 
 export default function Hostesses() {
   const [, setLocation] = useLocation();
+  const { user, logout } = useAuth();
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("gallery");
 
@@ -71,6 +73,22 @@ export default function Hostesses() {
               Daily
             </Button>
           </div>
+
+          {user && (
+            <Button
+              variant="outline"
+              size="default"
+              onClick={() => {
+                logout();
+                setLocation("/");
+              }}
+              className="gap-2 ml-auto"
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          )}
         </div>
 
         {viewMode === "daily" ? (
