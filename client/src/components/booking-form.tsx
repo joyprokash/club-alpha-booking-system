@@ -143,7 +143,7 @@ export function BookingForm({ hostessId, selectedDate, onCancel, onSuccess }: Bo
                     <SelectContent>
                       {sortedServices.map((service) => (
                         <SelectItem key={service.id} value={service.id}>
-                          {service.name} ({service.durationMin} min)
+                          {service.name} ({service.durationMin} min) - ${(service.priceCents / 100).toFixed(2)}
                         </SelectItem>
                       ))}
                     </SelectContent>
