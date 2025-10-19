@@ -286,11 +286,11 @@ export default function AdminCalendar() {
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-hidden">
-        <div className="flex h-full">
+      <div className="flex-1 overflow-auto">
+        <div className="flex min-h-full">
           {/* Time Column */}
           <div className="w-20 flex-shrink-0 border-r bg-muted/30 sticky left-0 z-30">
-            <div className={`${currentZoom.headerHeight} border-b bg-card`} />
+            <div className={`${currentZoom.headerHeight} border-b bg-card sticky top-0 z-40`} />
             {timeSlots.map((slot) => (
               <div
                 key={slot}
@@ -301,7 +301,7 @@ export default function AdminCalendar() {
             ))}
           </div>
 
-          {/* Hostess Columns */}
+          {/* Hostess Columns - Wrapper for horizontal scroll */}
           <div className="flex-1 overflow-x-auto">
             <div className="flex min-w-max">
               {sortedHostesses.map((hostess) => (
