@@ -57,6 +57,11 @@ export function AppSidebar() {
       icon: FileUp,
     },
     {
+      title: "Import Clients",
+      url: "/admin/client-import",
+      icon: FileUp,
+    },
+    {
       title: "Services",
       url: "/admin/services",
       icon: Settings,
