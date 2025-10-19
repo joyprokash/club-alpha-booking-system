@@ -630,7 +630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload profile photo for staff's linked hostess
+  // Upload profile photo for staff's linked hostess (creates pending upload for admin approval)
   app.post("/api/staff/profile-photo", 
     authenticateToken, 
     requireRole("STAFF"), 
@@ -653,26 +653,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Construct public URL for the photo
         const photoUrl = `/api/assets/hostess-photos/${req.file.filename}`;
 
-        // Update hostess with new photo URL
-        const updatedHostess = await storage.updateHostess(hostess.id, { photoUrl });
-
-        // Verify update succeeded
-        if (!updatedHostess) {
-          await fs.unlink(req.file.path).catch(() => {});
-          return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Failed to update profile photo" } });
-        }
+        // Create a pending photo upload for admin approval
+        const photoUpload = await storage.createPhotoUpload({
+          hostessId: hostess.id,
+          photoUrl,
+          status: 'PENDING',
+        });
 
         await storage.createAuditLog({
           userId: req.user?.id,
-          action: "UPDATE",
-          entity: "hostess",
-          entityId: hostess.id,
-          meta: { photoUrl, staffUpload: true },
+          action: "CREATE",
+          entity: "photo_upload",
+          entityId: photoUpload.id,
+          meta: { photoUrl, hostessId: hostess.id, staffUpload: true },
         });
 
-        res.json({ photoUrl, hostess: updatedHostess });
+        res.json({ 
+          message: "Photo uploaded successfully and pending admin approval",
+          photoUpload,
+          photoUrl
+        });
       } catch (error) {
-        // Clean up uploaded file if database update fails
+        // Clean up uploaded file if database insert fails
         if (req.file) {
           await fs.unlink(req.file.path).catch(() => {});
         }
@@ -845,6 +847,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== ADMIN ENDPOINTS ====================
   
+  // Get pending photo uploads (admin only)
+  app.get("/api/admin/photo-uploads/pending", authenticateToken, requireRole("ADMIN"), async (req, res, next) => {
+    try {
+      const uploads = await storage.getPendingPhotoUploads();
+      res.json(uploads);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Approve photo upload (admin only)
+  app.post("/api/admin/photo-uploads/:id/approve", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      
+      const upload = await storage.approvePhotoUpload(id, req.user!.id);
+      
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "APPROVE",
+        entity: "photo_upload",
+        entityId: id,
+        meta: { photoUrl: upload.photoUrl },
+      });
+
+      res.json({ message: "Photo approved successfully", upload });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Reject photo upload (admin only)
+  app.post("/api/admin/photo-uploads/:id/reject", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      
+      const upload = await storage.rejectPhotoUpload(id, req.user!.id);
+      
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "REJECT",
+        entity: "photo_upload",
+        entityId: id,
+        meta: { photoUrl: upload.photoUrl },
+      });
+
+      res.json({ message: "Photo rejected successfully", upload });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Get all users (admin and reception)
   app.get("/api/admin/users", authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req, res, next) => {
     try {
