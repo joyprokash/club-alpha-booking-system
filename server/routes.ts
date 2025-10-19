@@ -1053,15 +1053,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search clients
+  // Search clients (or get all if no query)
   app.get("/api/clients", authenticateToken, async (req, res, next) => {
     try {
       const { q } = req.query;
-      if (!q || (q as string).length < 2) {
-        return res.json([]);
-      }
-
-      const clients = await storage.searchClients(q as string);
+      
+      // If no query or query too short, return all clients
+      const clients = q && (q as string).length >= 2 
+        ? await storage.searchClients(q as string)
+        : await storage.getAllClients();
+        
       res.json(clients.map(c => ({ ...c, passwordHash: undefined })));
     } catch (error) {
       next(error);

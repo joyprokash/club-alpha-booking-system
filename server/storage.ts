@@ -90,6 +90,7 @@ export interface IStorage {
   rejectPhotoUpload(id: string, reviewerId: string): Promise<PhotoUpload>;
 
   // Search operations
+  getAllClients(): Promise<User[]>;
   searchClients(query: string): Promise<User[]>;
 }
 
@@ -516,6 +517,14 @@ export class DbStorage implements IStorage {
   }
 
   // Search operations
+  async getAllClients(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.role, 'CLIENT'))
+      .orderBy(users.email);
+  }
+
   async searchClients(query: string): Promise<User[]> {
     return await db
       .select()
