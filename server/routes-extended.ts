@@ -170,43 +170,62 @@ export function registerExtendedRoutes(app: Express) {
 
   // ==================== BULK CLIENT IMPORT ====================
   
+  // Optimized for large datasets (e.g., 14,000+ records)
   app.post("/api/clients/bulk-import", importLimiter, authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
     try {
       const { csvData } = z.object({ csvData: z.string() }).parse(req.body);
       
       const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true });
       const results: any[] = [];
+      
+      // Use a single password hash for all clients to save processing time
       const tempPassword = Math.random().toString(36).slice(-12);
       const passwordHash = await bcrypt.hash(tempPassword, 10);
 
-      for (const row of parsed.data as any[]) {
-        try {
-          const email = row.email?.trim();
-          if (!email || !email.includes("@")) {
-            results.push({ row, success: false, error: "Invalid email" });
-            continue;
+      // Process in batches to avoid overwhelming the database
+      const BATCH_SIZE = 100;
+      const rows = parsed.data as any[];
+      
+      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const batch = rows.slice(i, i + BATCH_SIZE);
+        
+        await Promise.all(batch.map(async (row) => {
+          try {
+            const email = row.email?.trim();
+            
+            // Extract username from email (part before @)
+            const username = email?.split('@')[0]?.toLowerCase();
+            
+            if (!email || !email.includes("@") || !username) {
+              results.push({ row, success: false, error: "Invalid email" });
+              return;
+            }
+
+            // Check if exists
+            const existing = await storage.getUserByEmail(email);
+            if (existing) {
+              results.push({ row, success: false, error: "User already exists" });
+              return;
+            }
+
+            await storage.createUser({
+              username,
+              email,
+              passwordHash,
+              role: "CLIENT",
+              forcePasswordReset: true,
+            });
+
+            results.push({ row, success: true, email });
+          } catch (error: any) {
+            results.push({ row, success: false, error: error.message });
           }
-
-          // Check if exists
-          const existing = await storage.getUserByEmail(email);
-          if (existing) {
-            results.push({ row, success: false, error: "User already exists" });
-            continue;
-          }
-
-          await storage.createUser({
-            email,
-            passwordHash,
-            role: "CLIENT",
-            forcePasswordReset: true,
-          });
-
-          results.push({ row, success: true });
-        } catch (error: any) {
-          results.push({ row, success: false, error: error.message });
+        }));
+        
+        // Small delay between batches to prevent overwhelming the DB
+        if (i + BATCH_SIZE < rows.length) {
+          await new Promise(resolve => setTimeout(resolve, 10));
         }
-
-        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       await storage.createAuditLog({
@@ -214,10 +233,19 @@ export function registerExtendedRoutes(app: Express) {
         action: "BULK_IMPORT",
         entity: "client",
         entityId: "bulk",
-        meta: { results, count: results.filter(r => r.success).length },
+        meta: { 
+          total: results.length,
+          imported: results.filter(r => r.success).length,
+          failed: results.filter(r => !r.success).length
+        },
       });
 
-      res.json({ results, total: results.length, imported: results.filter(r => r.success).length });
+      res.json({ 
+        results, 
+        total: results.length, 
+        imported: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length
+      });
     } catch (error) {
       next(error);
     }
