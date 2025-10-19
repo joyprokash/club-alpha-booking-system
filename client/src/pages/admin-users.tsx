@@ -213,106 +213,6 @@ export default function AdminUsers() {
           <p className="text-muted-foreground">Manage user roles and permissions</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bulk Import Users</CardTitle>
-              <CardDescription>Upload a CSV file to create multiple users at once</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>CSV Format:</strong> email,role,password (password is optional)
-                <br />
-                <strong>Example:</strong> user@example.com,CLIENT,mypassword123
-                <br />
-                <strong>Roles:</strong> ADMIN, STAFF, RECEPTION, CLIENT
-              </AlertDescription>
-            </Alert>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Upload CSV File</label>
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileUpload}
-                className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-                data-testid="input-csv-file"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Or Paste CSV Data</label>
-              <Textarea
-                value={csvData}
-                onChange={(e) => setCsvData(e.target.value)}
-                placeholder="email,role,password&#10;user1@example.com,CLIENT&#10;user2@example.com,STAFF,password123"
-                rows={6}
-                className="font-mono text-xs"
-                data-testid="textarea-csv"
-              />
-            </div>
-
-            <Button
-              onClick={handleBulkImport}
-              disabled={bulkImportMutation.isPending || !csvData.trim()}
-              className="w-full"
-              data-testid="button-import-users"
-            >
-              <FileUp className="h-4 w-4 mr-2" />
-              {bulkImportMutation.isPending ? "Importing..." : "Import Users"}
-            </Button>
-
-            {importResults && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Import Results</CardTitle>
-                  <CardDescription>
-                    {importResults.imported} of {importResults.total} users imported successfully
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {importResults.results.map((result: any, idx: number) => (
-                      <div
-                        key={idx}
-                        className={`flex items-start gap-2 p-3 rounded-md ${
-                          result.success ? "bg-green-50 dark:bg-green-950" : "bg-red-50 dark:bg-red-950"
-                        }`}
-                        data-testid={`result-${idx}`}
-                      >
-                        {result.success ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
-                        ) : (
-                          <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
-                        )}
-                        <div className="flex-1 text-sm">
-                          <div className="font-medium">{result.row.email}</div>
-                          {result.success ? (
-                            <>
-                              <div className="text-muted-foreground">
-                                Role: {result.row.role || "CLIENT"}
-                              </div>
-                              {result.generatedPassword && (
-                                <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                                  Generated password: <code className="bg-background px-1 rounded">{result.generatedPassword}</code>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="text-red-600 dark:text-red-400">{result.error}</div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </CardContent>
-        </Card>
-
         {currentUser?.role === "ADMIN" && (
           <Card>
             <CardHeader>
@@ -344,7 +244,6 @@ export default function AdminUsers() {
             </CardContent>
           </Card>
         )}
-        </div>
 
         <Card>
           <CardHeader>
@@ -453,6 +352,105 @@ export default function AdminUsers() {
                   })}
                 </TableBody>
               </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Bulk Import Users</CardTitle>
+            <CardDescription>Upload a CSV file to create multiple users at once</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>CSV Format:</strong> email,role,password (password is optional)
+                <br />
+                <strong>Example:</strong> user@example.com,CLIENT,mypassword123
+                <br />
+                <strong>Roles:</strong> ADMIN, STAFF, RECEPTION, CLIENT
+              </AlertDescription>
+            </Alert>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Upload CSV File</label>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileUpload}
+                className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                data-testid="input-csv-file"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Or Paste CSV Data</label>
+              <Textarea
+                value={csvData}
+                onChange={(e) => setCsvData(e.target.value)}
+                placeholder="email,role,password&#10;user1@example.com,CLIENT&#10;user2@example.com,STAFF,password123"
+                rows={6}
+                className="font-mono text-xs"
+                data-testid="textarea-csv"
+              />
+            </div>
+
+            <Button
+              onClick={handleBulkImport}
+              disabled={bulkImportMutation.isPending || !csvData.trim()}
+              className="w-full"
+              data-testid="button-import-users"
+            >
+              <FileUp className="h-4 w-4 mr-2" />
+              {bulkImportMutation.isPending ? "Importing..." : "Import Users"}
+            </Button>
+
+            {importResults && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Import Results</CardTitle>
+                  <CardDescription>
+                    {importResults.imported} of {importResults.total} users imported successfully
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {importResults.results.map((result: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className={`flex items-start gap-2 p-3 rounded-md ${
+                          result.success ? "bg-green-50 dark:bg-green-950" : "bg-red-50 dark:bg-red-950"
+                        }`}
+                        data-testid={`result-${idx}`}
+                      >
+                        {result.success ? (
+                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                        ) : (
+                          <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                        )}
+                        <div className="flex-1 text-sm">
+                          <div className="font-medium">{result.row.email}</div>
+                          {result.success ? (
+                            <>
+                              <div className="text-muted-foreground">
+                                Role: {result.row.role || "CLIENT"}
+                              </div>
+                              {result.generatedPassword && (
+                                <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                                  Generated password: <code className="bg-background px-1 rounded">{result.generatedPassword}</code>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="text-red-600 dark:text-red-400">{result.error}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </CardContent>
         </Card>
