@@ -1,7 +1,7 @@
 # Club Alpha Booking Platform
 
 ## Overview
-Club Alpha is a production-ready, multi-location hostess booking platform designed to manage appointments across Downtown and West End locations. It features advanced scheduling, real-time conflict detection, double-booking prevention, role-based access control, and comprehensive admin tools. The platform aims to streamline booking operations, enhance client experience, and provide robust management capabilities for staff and administrators.
+Club Alpha is a production-ready, multi-location hostess booking platform designed to manage appointments across Downtown and West End locations. It features advanced scheduling, real-time conflict detection, double-booking prevention, role-based access control, comprehensive admin tools, and automatic privacy-focused cleanup of client booking history. The platform aims to streamline booking operations, enhance client experience, and provide robust management capabilities for staff and administrators.
 
 ## User Preferences
 I want the agent to use simple language.
@@ -22,6 +22,7 @@ The platform is built with a React 18, TypeScript, Vite frontend using TanStack 
 
 ### Technical Implementations
 - **Database Schema**: Core entities include `users`, `hostesses`, `services`, `bookings`, `timeOff`, `weeklySchedule`, `photoUploads`, and `auditLog`.
+- **Automatic Data Cleanup**: Client booking history older than 2 weeks is automatically deleted every 24 hours to maintain privacy and database cleanliness. This cleanup runs on server startup and continues in the background.
 - **Time System**: All times are stored as minutes from midnight (0-1439). The system operates on a 10:00-23:00 grid in 15-minute increments, with a default timezone of America/Toronto.
 - **Double-Booking Prevention**: Utilizes serializable transactions with advisory locks per `(hostessId, date)`, validating against existing bookings, time-off blocks, and weekly schedules to prevent conflicts.
 - **Admin Daily Grid**: Features sticky time and hostess headers, horizontal scrolling, color-coded cells, quick booking modal integration, and 3-level zoom controls.
@@ -32,6 +33,7 @@ The platform is built with a React 18, TypeScript, Vite frontend using TanStack 
 - **Password Reset**: Admins can reset any user's password, requiring 8+ characters and bcrypt hashing, with all actions logged.
 - **Photo Upload & Approval**: STAFF users can upload profile photos for their linked hostess via a secure endpoint. Uploads are stored with PENDING status in the `photoUploads` table. ADMIN users review pending uploads at `/admin/photo-approvals` and can approve or reject them. When approved, the photo is applied to the hostess profile and status changes to APPROVED. The system enforces ownership verification to ensure staff can only upload for their own linked hostess.
 - **Service Pricing**: Services store prices as integer cents (priceCents) in the database and display as dollars with 2 decimal places. ADMIN users can easily create and edit service prices through the Services Management page. Prices are prominently displayed to clients on service cards (hostess profile page) and in the booking form dropdown.
+- **Demo Login Credentials**: The home page displays demo credentials for all four user roles (ADMIN, RECEPTION, STAFF, CLIENT) to allow easy exploration of the platform. STAFF demo user is linked to the first hostess (Sophia) for testing staff features like photo uploads and schedule management.
 - **Analytics Dashboard**: Provides revenue metrics, booking trends, and cancellation rates with `recharts` visualization.
 
 ## External Dependencies
