@@ -19,6 +19,7 @@ import { z } from "zod";
 export const userRoleEnum = pgEnum('user_role', ['ADMIN', 'STAFF', 'RECEPTION', 'CLIENT']);
 export const locationEnum = pgEnum('location', ['DOWNTOWN', 'WEST_END']);
 export const bookingStatusEnum = pgEnum('booking_status', ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELED']);
+export const photoUploadStatusEnum = pgEnum('photo_upload_status', ['PENDING', 'APPROVED', 'REJECTED']);
 
 // Users Table
 export const users = pgTable("users", {
@@ -109,6 +110,20 @@ export const auditLog = pgTable("audit_log", {
   entityIdx: index("audit_log_entity_idx").on(table.entity, table.entityId),
 }));
 
+// Photo Uploads Table
+export const photoUploads = pgTable("photo_uploads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  hostessId: varchar("hostess_id").notNull().references(() => hostesses.id),
+  photoUrl: text("photo_url").notNull(),
+  status: photoUploadStatusEnum("status").notNull().default('PENDING'),
+  uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+}, (table) => ({
+  hostessIdx: index("photo_uploads_hostess_idx").on(table.hostessId),
+  statusIdx: index("photo_uploads_status_idx").on(table.status),
+}));
+
 // Zod Schemas for Validation
 export const insertUserSchema = createInsertSchema(users, {
   email: z.string().email(),
@@ -147,6 +162,11 @@ export const insertWeeklyScheduleSchema = createInsertSchema(weeklySchedule, {
 
 export const insertAuditLogSchema = createInsertSchema(auditLog).omit({ id: true, createdAt: true });
 
+export const insertPhotoUploadSchema = createInsertSchema(photoUploads, {
+  photoUrl: z.string().url(),
+  status: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
+}).omit({ id: true, uploadedAt: true, reviewedBy: true, reviewedAt: true });
+
 // TypeScript Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -169,6 +189,9 @@ export type InsertWeeklySchedule = z.infer<typeof insertWeeklyScheduleSchema>;
 export type AuditLog = typeof auditLog.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 
+export type PhotoUpload = typeof photoUploads.$inferSelect;
+export type InsertPhotoUpload = z.infer<typeof insertPhotoUploadSchema>;
+
 // Additional types for API responses
 export type BookingWithDetails = Booking & {
   hostess: Hostess;
@@ -179,4 +202,9 @@ export type BookingWithDetails = Booking & {
 export type HostessWithSchedule = Hostess & {
   weeklySchedule: WeeklySchedule[];
   timeOff: TimeOff[];
+};
+
+export type PhotoUploadWithDetails = PhotoUpload & {
+  hostess: Hostess;
+  reviewer?: User;
 };
