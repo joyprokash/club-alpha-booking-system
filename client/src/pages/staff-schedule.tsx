@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addDays, startOfWeek, addWeeks, subWeeks, parse, isSameDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 import { formatTimeRange, getCurrentDateToronto } from "@/lib/time-utils";
-import type { BookingWithDetails } from "@shared/schema";
+import type { BookingWithDetails, Hostess, WeeklySchedule } from "@shared/schema";
 import { useAuth } from "@/lib/auth-context";
 
 const APP_TIMEZONE = "America/Toronto";
@@ -23,7 +23,7 @@ export default function StaffScheduleWeekly() {
   const todayDate = parse(today, "yyyy-MM-dd", new Date());
 
   // Get staff's linked hostess
-  const { data: linkedHostess } = useQuery<any>({
+  const { data: linkedHostess } = useQuery<Hostess>({
     queryKey: ["/api/staff/hostess"],
   });
 
@@ -34,7 +34,7 @@ export default function StaffScheduleWeekly() {
   });
 
   // Get weekly schedule
-  const { data: weeklySchedule = [] } = useQuery<any[]>({
+  const { data: weeklySchedule = [] } = useQuery<WeeklySchedule[]>({
     queryKey: ["/api/staff/weekly-schedule"],
     enabled: !!linkedHostess,
   });
@@ -62,7 +62,7 @@ export default function StaffScheduleWeekly() {
   const goToNextWeek = () => setWeekStart(prev => addWeeks(prev, 1));
 
   const getDaySchedule = (weekday: number) => {
-    return weeklySchedule.find((s: any) => s.weekday === weekday);
+    return weeklySchedule.find(s => s.weekday === weekday);
   };
 
   const getDayBookings = (date: string) => {

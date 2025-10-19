@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, Clock, CalendarX, User } from "lucide-react";
 import { formatTimeRange, getCurrentDateToronto, getTomorrowDateToronto } from "@/lib/time-utils";
-import type { BookingWithDetails } from "@shared/schema";
+import type { BookingWithDetails, Hostess, TimeOff, WeeklySchedule } from "@shared/schema";
 import { useAuth } from "@/lib/auth-context";
 
 export default function StaffDashboard() {
@@ -13,7 +13,7 @@ export default function StaffDashboard() {
   const tomorrow = getTomorrowDateToronto();
 
   // Get staff's linked hostess
-  const { data: linkedHostess } = useQuery<any>({
+  const { data: linkedHostess } = useQuery<Hostess>({
     queryKey: ["/api/staff/hostess"],
   });
 
@@ -24,13 +24,13 @@ export default function StaffDashboard() {
   });
 
   // Get tomorrow's bookings
-  const { data: tomorrowBookings = [] } = useQuery<any[]>({
+  const { data: tomorrowBookings = [] } = useQuery<BookingWithDetails[]>({
     queryKey: ["/api/staff/bookings/tomorrow"],
     enabled: !!linkedHostess,
   });
 
   // Get today's time off
-  const { data: todayTimeOff = [] } = useQuery<any[]>({
+  const { data: todayTimeOff = [] } = useQuery<TimeOff[]>({
     queryKey: ["/api/staff/time-off/today"],
     enabled: !!linkedHostess,
   });
@@ -42,7 +42,7 @@ export default function StaffDashboard() {
   });
 
   // Get weekly schedule
-  const { data: weeklySchedule = [] } = useQuery<any[]>({
+  const { data: weeklySchedule = [] } = useQuery<WeeklySchedule[]>({
     queryKey: ["/api/staff/weekly-schedule"],
     enabled: !!linkedHostess,
   });
@@ -64,7 +64,7 @@ export default function StaffDashboard() {
   }
 
   const firstName = linkedHostess.displayName.split(' ')[0];
-  const workingDays = weeklySchedule.filter((s: any) => s.startTime && s.endTime).map((s: any) => s.weekday);
+  const workingDays = weeklySchedule.filter(s => s.startTime && s.endTime).map(s => s.weekday);
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
