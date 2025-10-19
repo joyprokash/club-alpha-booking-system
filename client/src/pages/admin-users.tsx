@@ -486,7 +486,7 @@ export default function AdminUsers() {
                       <SelectValue placeholder="Select hostess..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="NONE">None</SelectItem>
                       {hostesses
                         ?.filter(h => !h.userId || h.userId === editingUser?.id)
                         .map(h => (
