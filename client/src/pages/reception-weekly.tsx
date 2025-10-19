@@ -56,7 +56,18 @@ export default function ReceptionWeekly() {
       if (locationFilter !== "all") {
         params.append("location", locationFilter);
       }
-      const response = await fetch(`/api/bookings/range?${params}`);
+      
+      const token = localStorage.getItem("auth_token");
+      const headers: Record<string, string> = {};
+      
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/bookings/range?${params}`, {
+        headers,
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Failed to fetch bookings");
       return response.json();
     },
