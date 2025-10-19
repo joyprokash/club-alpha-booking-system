@@ -21,7 +21,7 @@ The platform is built with a React 18, TypeScript, Vite frontend using TanStack 
 - **Layout**: Consistent spacing with Tailwind units, fixed grid time column (80px), hostess columns with a minimum width of 200px, and cell height of 48px for 15-minute slots. Max width for admin is 1800px and client is 1280px.
 
 ### Technical Implementations
-- **Database Schema**: Core entities include `users`, `hostesses`, `services`, `bookings`, `timeOff`, `weeklySchedule`, and `auditLog`.
+- **Database Schema**: Core entities include `users`, `hostesses`, `services`, `bookings`, `timeOff`, `weeklySchedule`, `photoUploads`, and `auditLog`.
 - **Time System**: All times are stored as minutes from midnight (0-1439). The system operates on a 10:00-23:00 grid in 15-minute increments, with a default timezone of America/Toronto.
 - **Double-Booking Prevention**: Utilizes serializable transactions with advisory locks per `(hostessId, date)`, validating against existing bookings, time-off blocks, and weekly schedules to prevent conflicts.
 - **Admin Daily Grid**: Features sticky time and hostess headers, horizontal scrolling, color-coded cells, quick booking modal integration, and 3-level zoom controls.
@@ -30,7 +30,7 @@ The platform is built with a React 18, TypeScript, Vite frontend using TanStack 
 - **Import/Export Schedules**: Supports CSV import and export of weekly schedules. Format: `id,hostess,monday,tuesday,wednesday,thursday,friday,saturday,sunday` with time ranges like "10:00-18:00". Idempotent upserts by (hostessId, weekday) with row-by-row error capture.
 - **Role-Based Access Control**: Defines distinct permissions for ADMIN, RECEPTION, STAFF, and CLIENT roles, including specific dashboard views and functionalities.
 - **Password Reset**: Admins can reset any user's password, requiring 8+ characters and bcrypt hashing, with all actions logged.
-- **Photo Upload**: STAFF users can securely upload profile photos for their linked hostess via a dedicated endpoint that verifies ownership.
+- **Photo Upload & Approval**: STAFF users can upload profile photos for their linked hostess via a secure endpoint. Uploads are stored with PENDING status in the `photoUploads` table. ADMIN users review pending uploads at `/admin/photo-approvals` and can approve or reject them. When approved, the photo is applied to the hostess profile and status changes to APPROVED. The system enforces ownership verification to ensure staff can only upload for their own linked hostess.
 - **Analytics Dashboard**: Provides revenue metrics, booking trends, and cancellation rates with `recharts` visualization.
 
 ## External Dependencies
