@@ -33,7 +33,9 @@ export function ClientDailyView({ locationFilter }: ClientDailyViewProps) {
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
   const { data: bookings, isLoading: bookingsLoading } = useQuery<Booking[]>({
-    queryKey: ["/api/bookings?date=" + dateStr],
+    queryKey: locationFilter === "all"
+      ? [`/api/bookings/day?date=${dateStr}`]
+      : [`/api/bookings/day?date=${dateStr}&location=${locationFilter}`],
   });
 
   const sortedHostesses = useMemo(() => 
