@@ -772,7 +772,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { startDate, endDate, groupBy = "hostess" } = req.query;
       
       const allBookings = await storage.getAllBookings();
-      let filteredBookings = allBookings.filter(b => b.status === "CONFIRMED" || b.status === "COMPLETED");
+      // Include all non-cancelled bookings (PENDING, CONFIRMED, COMPLETED)
+      let filteredBookings = allBookings.filter(b => b.status !== "CANCELED");
 
       // Apply date filters if provided
       if (startDate) {

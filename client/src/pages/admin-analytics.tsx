@@ -84,7 +84,7 @@ export default function AdminAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" data-testid="metric-total-revenue">{formatCurrency(totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground">From {totalBookings} confirmed bookings</p>
+            <p className="text-xs text-muted-foreground">From {totalBookings} active bookings</p>
           </CardContent>
         </Card>
 
