@@ -24,6 +24,7 @@ export const photoUploadStatusEnum = pgEnum('photo_upload_status', ['PENDING', '
 // Users Table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: userRoleEnum("role").notNull().default('CLIENT'),
@@ -127,6 +128,7 @@ export const photoUploads = pgTable("photo_uploads", {
 
 // Zod Schemas for Validation
 export const insertUserSchema = createInsertSchema(users, {
+  username: z.string().min(1),
   email: z.string().email(),
   passwordHash: z.string().min(1),
   role: z.enum(['ADMIN', 'STAFF', 'RECEPTION', 'CLIENT']),
