@@ -99,6 +99,15 @@ function AppRouter() {
     (user.role !== "CLIENT" && (location.startsWith("/hostesses") || location.startsWith("/hostess/")))
   );
 
+  // Show loading state if we're on a protected route and auth is still loading
+  if (isLoading && ["/admin", "/reception", "/staff"].some(path => location.startsWith(path))) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
   if (needsSidebar) {
     return (
       <SidebarProvider style={sidebarStyle}>
