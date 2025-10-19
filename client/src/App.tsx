@@ -29,6 +29,7 @@ import AdminAnalytics from "@/pages/admin-analytics";
 import AdminImport from "@/pages/admin-import";
 import AdminExport from "@/pages/admin-export";
 import AdminUsers from "@/pages/admin-users";
+import AdminClients from "@/pages/admin-clients";
 import AdminHostesses from "@/pages/admin-hostesses";
 import AdminPhotoApprovals from "@/pages/admin-photo-approvals";
 
@@ -155,6 +156,11 @@ function AppRouter() {
                 <Route path="/admin/users">
                   <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
                     <AdminUsers />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/admin/clients">
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
+                    <AdminClients />
                   </ProtectedRoute>
                 </Route>
                 <Route path="/admin/hostesses">

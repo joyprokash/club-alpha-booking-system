@@ -1,4 +1,4 @@
-import { Calendar, Users, Settings, LayoutDashboard, UserCog, Clock, FileUp, FileDown, LogOut, BarChart3, ImageIcon } from "lucide-react";
+import { Calendar, Users, Settings, LayoutDashboard, UserCog, Clock, FileUp, FileDown, LogOut, BarChart3, ImageIcon, UserCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   Sidebar,
@@ -40,6 +40,11 @@ export function AppSidebar() {
       title: "Users",
       url: "/admin/users",
       icon: UserCog,
+    },
+    {
+      title: "Clients",
+      url: "/admin/clients",
+      icon: UserCircle,
     },
     {
       title: "Hostesses",
@@ -91,8 +96,8 @@ export function AppSidebar() {
     },
     {
       title: "Clients",
-      url: "/admin/users",
-      icon: UserCog,
+      url: "/admin/clients",
+      icon: UserCircle,
     },
     {
       title: "Photo Approvals",
