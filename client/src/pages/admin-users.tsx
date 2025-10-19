@@ -11,11 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/lib/auth-context";
 import { UserCog, FileUp, AlertCircle, CheckCircle2, XCircle, KeyRound, ShieldOff, ShieldCheck, Trash2 } from "lucide-react";
 import type { User, Hostess } from "@shared/schema";
 
 export default function AdminUsers() {
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState("");
@@ -306,35 +308,37 @@ export default function AdminUsers() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Reset Client Bookings</CardTitle>
-            <CardDescription>Delete all bookings made by CLIENT users</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Warning:</strong> This will permanently delete ALL bookings made by CLIENT role users. This action cannot be undone.
-              </AlertDescription>
-            </Alert>
+        {currentUser?.role === "ADMIN" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Reset Client Bookings</CardTitle>
+              <CardDescription>Delete all bookings made by CLIENT users</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Warning:</strong> This will permanently delete ALL bookings made by CLIENT role users. This action cannot be undone.
+                </AlertDescription>
+              </Alert>
 
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (confirm("Are you sure you want to delete ALL client bookings? This cannot be undone.")) {
-                  resetClientBookingsMutation.mutate();
-                }
-              }}
-              disabled={resetClientBookingsMutation.isPending}
-              className="w-full"
-              data-testid="button-reset-client-bookings"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {resetClientBookingsMutation.isPending ? "Deleting..." : "Reset All Client Bookings"}
-            </Button>
-          </CardContent>
-        </Card>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (confirm("Are you sure you want to delete ALL client bookings? This cannot be undone.")) {
+                    resetClientBookingsMutation.mutate();
+                  }
+                }}
+                disabled={resetClientBookingsMutation.isPending}
+                className="w-full"
+                data-testid="button-reset-client-bookings"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {resetClientBookingsMutation.isPending ? "Deleting..." : "Reset All Client Bookings"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
         </div>
 
         <Card>
