@@ -312,6 +312,93 @@ export function registerExtendedRoutes(app: Express) {
     }
   });
 
+  // ==================== HOSTESS IMPORT ENDPOINT ====================
+  
+  app.post("/api/hostesses/import", importLimiter, authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { csvData } = z.object({ csvData: z.string() }).parse(req.body);
+      
+      const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true });
+      const results: any[] = [];
+
+      for (const row of parsed.data as any[]) {
+        try {
+          const displayName = row.display_name?.trim() || row.name?.trim();
+          if (!displayName) {
+            results.push({ row, success: false, error: "Missing display_name" });
+            continue;
+          }
+
+          const location = row.location?.trim().toUpperCase();
+          if (!location || !["DOWNTOWN", "WEST_END"].includes(location)) {
+            results.push({ row, success: false, error: "Invalid location (must be DOWNTOWN or WEST_END)" });
+            continue;
+          }
+
+          // Parse specialties (comma-separated or array)
+          let specialties: string[] = [];
+          if (row.specialties) {
+            if (typeof row.specialties === 'string') {
+              specialties = row.specialties.split(',').map((s: string) => s.trim()).filter(Boolean);
+            } else if (Array.isArray(row.specialties)) {
+              specialties = row.specialties;
+            }
+          }
+
+          // Generate slug from display name
+          const slug = displayName.toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '') + '-' + location.toLowerCase().replace('_', '-');
+
+          // Check if hostess already exists by slug
+          const existingHostesses = await storage.getHostesses();
+          const existingHostess = existingHostesses.find(h => h.slug === slug);
+
+          if (existingHostess) {
+            // Update existing hostess
+            await storage.updateHostess(existingHostess.id, {
+              displayName,
+              bio: row.bio?.trim() || existingHostess.bio,
+              specialties: specialties.length > 0 ? specialties : existingHostess.specialties,
+              location: location as any,
+              active: row.active !== undefined ? row.active === 'true' || row.active === true : existingHostess.active,
+            });
+            results.push({ row, success: true, action: 'updated', hostess: displayName });
+          } else {
+            // Create new hostess
+            await storage.createHostess({
+              slug,
+              displayName,
+              bio: row.bio?.trim() || null,
+              specialties: specialties.length > 0 ? specialties : [],
+              location: location as any,
+              active: row.active !== undefined ? row.active === 'true' || row.active === true : true,
+              userId: null,
+            });
+            results.push({ row, success: true, action: 'created', hostess: displayName });
+          }
+        } catch (error: any) {
+          results.push({ row, success: false, error: error.message });
+        }
+
+        // Small delay to prevent DB spam
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "IMPORT",
+        entity: "hostess",
+        entityId: "bulk",
+        meta: { results },
+      });
+
+      res.json({ results, total: results.length });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // ==================== AVAILABILITY ENDPOINT ====================
   
   app.get("/api/bookings/availability", async (req, res, next) => {
