@@ -230,17 +230,6 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
-
-        <div className="flex justify-center mb-8">
-          <Button 
-            size="lg" 
-            variant="outline"
-            onClick={() => setLocation("/hostesses")}
-            data-testid="button-browse-hostesses"
-          >
-            Browse Hostesses Without Login
-          </Button>
-        </div>
       </div>
       <Footer />
     </div>
