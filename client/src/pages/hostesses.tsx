@@ -3,10 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, LayoutGrid, Calendar, LogOut } from "lucide-react";
+import { MapPin, LayoutGrid, Calendar, LogOut, Search } from "lucide-react";
 import { ClientDailyView } from "@/components/client-daily-view";
 import { useAuth } from "@/lib/auth-context";
 import { Footer } from "@/components/footer";
@@ -19,6 +20,7 @@ export default function Hostesses() {
   const { user, logout } = useAuth();
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("gallery");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const { data: hostesses, isLoading } = useQuery<Hostess[]>({
     queryKey: locationFilter === "all" 
@@ -26,9 +28,14 @@ export default function Hostesses() {
       : ["/api/hostesses?location=" + locationFilter],
   });
 
-  const sortedHostesses = hostesses?.slice().sort((a, b) => 
-    (a.displayName || "").localeCompare(b.displayName || "")
-  ) || [];
+  // Filter and sort hostesses
+  const filteredAndSortedHostesses = hostesses
+    ?.filter((hostess) => 
+      hostess.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => 
+      (a.displayName || "").localeCompare(b.displayName || "")
+    ) || [];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -40,9 +47,21 @@ export default function Hostesses() {
           </p>
         </div>
 
-        <div className="mb-6 flex items-center gap-4">
+        <div className="mb-6 flex flex-wrap items-center gap-4">
+          <div className="relative flex-1 min-w-64 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search hostesses by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+              data-testid="input-search-hostess"
+            />
+          </div>
+
           <Select value={locationFilter} onValueChange={setLocationFilter}>
-            <SelectTrigger className="w-64" data-testid="select-location-filter">
+            <SelectTrigger className="w-48" data-testid="select-location-filter">
               <SelectValue placeholder="All Locations" />
             </SelectTrigger>
             <SelectContent>
@@ -108,15 +127,18 @@ export default function Hostesses() {
               </Card>
             ))}
           </div>
-        ) : sortedHostesses.length === 0 ? (
+        ) : filteredAndSortedHostesses.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center text-muted-foreground">
-              No hostesses available in this location
+              {searchQuery 
+                ? `No hostesses found matching "${searchQuery}"`
+                : "No hostesses available in this location"
+              }
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sortedHostesses.map((hostess) => (
+            {filteredAndSortedHostesses.map((hostess) => (
               <Card 
                 key={hostess.id} 
                 className="hover-elevate cursor-pointer transition-all"
