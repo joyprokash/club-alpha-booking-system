@@ -77,7 +77,7 @@ export default function Home() {
       const result = await login(data.username, data.password);
       
       if (result?.requiresPasswordReset) {
-        setLocation("/reset-password");
+        setLocation("/change-password");
       } else {
         const userRole = result?.user?.role || result?.role;
         switch (userRole) {
@@ -282,6 +282,67 @@ export default function Home() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Hostess Login Instructions */}
+        <Card className="mb-8 bg-primary/5 border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-2xl">Hostess Login</CardTitle>
+            <CardDescription>
+              All hostesses can log in using their first name
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3 p-4 bg-background rounded-lg border">
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+                    1
+                  </div>
+                  <span className="font-medium">First Login</span>
+                </div>
+                <div className="ml-8 space-y-2">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground">Username</span>
+                    <code className="text-sm font-mono bg-muted px-2 py-1 rounded w-fit">
+                      Your first name (e.g., "Amelia")
+                    </code>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted-foreground">Initial Password</span>
+                    <code className="text-sm font-mono bg-muted px-2 py-1 rounded w-fit">
+                      Same as your first name
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-4 bg-background rounded-lg border">
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+                    2
+                  </div>
+                  <span className="font-medium">Create Your Secure Password</span>
+                </div>
+                <p className="ml-8 text-sm text-muted-foreground">
+                  After your first login, you'll be required to create your own secure password. 
+                  This password will be used for all future logins.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+              <div className="text-amber-600 dark:text-amber-400 mt-0.5">
+                <Lock className="h-4 w-4" />
+              </div>
+              <p className="text-sm text-amber-900 dark:text-amber-200">
+                <strong>Security Note:</strong> Your initial password is temporary and must be changed 
+                on first login to protect your account and client information.
+              </p>
             </div>
           </CardContent>
         </Card>
