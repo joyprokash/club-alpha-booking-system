@@ -84,9 +84,16 @@ export default function AdminClientImport() {
 
   const downloadTemplate = () => {
     const template = `email
-client1@example.com
-client2@example.com
-client3@example.com`;
+john.doe@example.com
+jane.smith@clubalpha.ca
+michael.johnson@gmail.com
+sarah.williams@yahoo.com
+david.brown@outlook.com
+emma.davis@hotmail.com
+james.wilson@example.org
+olivia.martinez@example.net
+robert.anderson@example.co
+sophia.taylor@example.io`;
     
     const blob = new Blob([template], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
