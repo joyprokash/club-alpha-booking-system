@@ -66,6 +66,16 @@ export function getCurrentDateToronto(): string {
 }
 
 /**
+ * Get tomorrow's date in Toronto timezone as YYYY-MM-DD
+ */
+export function getTomorrowDateToronto(): string {
+  const now = new Date();
+  const torontoDate = toZonedTime(now, APP_TIMEZONE);
+  const tomorrow = addDays(torontoDate, 1);
+  return format(tomorrow, "yyyy-MM-dd");
+}
+
+/**
  * Format date for display
  */
 export function formatDate(dateString: string): string {

@@ -7,6 +7,8 @@ import rateLimit from "express-rate-limit";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
+import { format, addDays } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import { storage } from "./storage";
 import { authenticateToken, requireRole, generateToken, errorHandler, type AuthRequest } from "./middleware";
 import { hasTimeConflict, getDayOfWeek, parseTimeToMinutes, minutesToTime, getCurrentDateToronto } from "../client/src/lib/time-utils";
@@ -814,6 +816,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       res.json(staffBookings.slice(0, 10));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get staff's tomorrow's bookings
+  app.get("/api/staff/bookings/tomorrow", authenticateToken, requireRole("STAFF"), async (req: AuthRequest, res, next) => {
+    try {
+      const hostesses = await storage.getHostesses();
+      const linkedHostess = hostesses.find(h => h.userId === req.user?.id);
+      
+      if (!linkedHostess) {
+        return res.json([]);
+      }
+
+      const tomorrow = format(addDays(toZonedTime(new Date(), "America/Toronto"), 1), "yyyy-MM-dd");
+      const allBookings = await storage.getBookingsByDate(tomorrow);
+      const staffBookings = allBookings.filter(b => 
+        b.hostessId === linkedHostess.id && b.status !== "CANCELED"
+      );
+
+      res.json(staffBookings);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get staff's today's time off
+  app.get("/api/staff/time-off/today", authenticateToken, requireRole("STAFF"), async (req: AuthRequest, res, next) => {
+    try {
+      const hostesses = await storage.getHostesses();
+      const linkedHostess = hostesses.find(h => h.userId === req.user?.id);
+      
+      if (!linkedHostess) {
+        return res.json([]);
+      }
+
+      const today = getCurrentDateToronto();
+      const allTimeOff = await storage.getTimeOffByHostess(linkedHostess.id);
+      const todayTimeOff = allTimeOff.filter(t => t.date === today);
+
+      res.json(todayTimeOff);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get staff's weekly schedule
+  app.get("/api/staff/weekly-schedule", authenticateToken, requireRole("STAFF"), async (req: AuthRequest, res, next) => {
+    try {
+      const hostesses = await storage.getHostesses();
+      const linkedHostess = hostesses.find(h => h.userId === req.user?.id);
+      
+      if (!linkedHostess) {
+        return res.json([]);
+      }
+
+      const schedule = await storage.getWeeklyScheduleByHostess(linkedHostess.id);
+      res.json(schedule);
     } catch (error) {
       next(error);
     }

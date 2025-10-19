@@ -128,6 +128,11 @@ export function AppSidebar() {
 
   const staffItems = [
     {
+      title: "Dashboard",
+      url: "/staff/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
       title: "My Schedule",
       url: "/staff/schedule",
       icon: Calendar,

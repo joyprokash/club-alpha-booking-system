@@ -40,6 +40,7 @@ import ReceptionCalendar from "@/pages/reception-calendar";
 import ReceptionWeekly from "@/pages/reception-weekly";
 
 // Staff pages
+import StaffDashboard from "@/pages/staff-dashboard";
 import StaffSchedule from "@/pages/staff-schedule";
 
 // Shared
@@ -88,7 +89,7 @@ function AppRouter() {
       case "RECEPTION":
         return "/reception/calendar";
       case "STAFF":
-        return "/staff/schedule";
+        return "/staff/dashboard";
       default:
         return "/hostesses";
     }
@@ -216,6 +217,11 @@ function AppRouter() {
                 </Route>
 
                 {/* Staff routes */}
+                <Route path="/staff/dashboard">
+                  <ProtectedRoute allowedRoles={["STAFF"]}>
+                    <StaffDashboard />
+                  </ProtectedRoute>
+                </Route>
                 <Route path="/staff/schedule">
                   <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffSchedule />
