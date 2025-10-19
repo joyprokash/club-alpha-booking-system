@@ -39,7 +39,7 @@ export default function Login() {
       const result = await login(data.email, data.password);
       
       if (result?.requiresPasswordReset) {
-        setLocation("/reset-password");
+        setLocation("/change-password");
       } else {
         // Redirect based on user role
         const userRole = result?.user?.role || result?.role;

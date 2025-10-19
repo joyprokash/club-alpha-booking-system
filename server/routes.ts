@@ -105,6 +105,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid credentials" } });
       }
 
+      // Check if user is banned
+      if (user.banned) {
+        return res.status(403).json({ error: { code: "FORBIDDEN", message: "Account has been suspended. Please contact support." } });
+      }
+
       const validPassword = await bcrypt.compare(password, user.passwordHash);
       if (!validPassword) {
         return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Invalid credentials" } });
@@ -964,6 +969,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Ban/Unban user (admin and reception)
+  app.post("/api/admin/users/:id/ban", authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const { banned } = z.object({
+        banned: z.boolean(),
+      }).parse(req.body);
+
+      const user = await storage.updateUser(id, { banned });
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entity: "user",
+        entityId: id,
+        meta: { action: banned ? "banned" : "unbanned" },
+      });
+
+      res.json({ ...user, passwordHash: undefined });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // First-time password change (for users with forcePasswordReset)
+  app.post("/api/auth/change-password", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const { newPassword } = z.object({
+        newPassword: z.string().min(8, "Password must be at least 8 characters"),
+      }).parse(req.body);
+
+      if (!req.user) {
+        return res.status(401).json({ error: { code: "UNAUTHORIZED", message: "Not authenticated" } });
+      }
+
+      if (!req.user.forcePasswordReset) {
+        return res.status(400).json({ error: { code: "BAD_REQUEST", message: "Password change not required" } });
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      const updated = await storage.updateUser(req.user.id, { passwordHash, forcePasswordReset: false });
+
+      res.json({ user: { ...updated, passwordHash: undefined } });
     } catch (error) {
       next(error);
     }

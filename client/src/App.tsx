@@ -13,6 +13,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import ResetPassword from "@/pages/reset-password";
+import ChangePassword from "@/pages/change-password";
 
 // Client pages
 import Hostesses from "@/pages/hostesses";
@@ -205,6 +206,11 @@ function AppRouter() {
       {/* Public routes */}
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/change-password">
+        <ProtectedRoute>
+          <ChangePassword />
+        </ProtectedRoute>
+      </Route>
       <Route path="/reset-password">
         <ProtectedRoute>
           <ResetPassword />

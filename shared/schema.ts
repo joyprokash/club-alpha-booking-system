@@ -28,6 +28,7 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: userRoleEnum("role").notNull().default('CLIENT'),
   forcePasswordReset: boolean("force_password_reset").notNull().default(false),
+  banned: boolean("banned").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

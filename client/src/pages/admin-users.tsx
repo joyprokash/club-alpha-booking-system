@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { UserCog, FileUp, AlertCircle, CheckCircle2, XCircle, KeyRound } from "lucide-react";
+import { UserCog, FileUp, AlertCircle, CheckCircle2, XCircle, KeyRound, ShieldOff, ShieldCheck } from "lucide-react";
 import type { User, Hostess } from "@shared/schema";
 
 export default function AdminUsers() {
@@ -90,6 +90,26 @@ export default function AdminUsers() {
       toast({
         variant: "destructive",
         title: "Failed to reset password",
+        description: error.message,
+      });
+    },
+  });
+
+  const banUserMutation = useMutation({
+    mutationFn: async ({ id, banned }: { id: string; banned: boolean }) => {
+      return apiRequest("POST", `/api/admin/users/${id}/ban`, { banned });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ 
+        title: variables.banned ? "User banned successfully" : "User unbanned successfully",
+        description: variables.banned ? "User will no longer be able to log in" : "User can now log in again"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to update user status",
         description: error.message,
       });
     },
@@ -277,6 +297,7 @@ export default function AdminUsers() {
                   <TableRow>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Linked Hostess</TableHead>
                     <TableHead>Force Reset</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -293,6 +314,13 @@ export default function AdminUsers() {
                           <Badge variant={getRoleBadgeVariant(user.role)}>
                             {user.role}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.banned ? (
+                            <Badge variant="destructive" data-testid={`status-banned-${user.id}`}>Banned</Badge>
+                          ) : (
+                            <Badge variant="secondary" data-testid={`status-active-${user.id}`}>Active</Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                           {linkedHostess ? linkedHostess.displayName : "-"}
@@ -331,6 +359,31 @@ export default function AdminUsers() {
                               <KeyRound className="h-4 w-4 mr-2" />
                               Reset Password
                             </Button>
+                            {user.role === "CLIENT" && (
+                              <Button
+                                variant={user.banned ? "default" : "destructive"}
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm(user.banned ? `Unban ${user.email}?` : `Ban ${user.email}? They will not be able to log in.`)) {
+                                    banUserMutation.mutate({ id: user.id, banned: !user.banned });
+                                  }
+                                }}
+                                disabled={banUserMutation.isPending}
+                                data-testid={`button-ban-${user.id}`}
+                              >
+                                {user.banned ? (
+                                  <>
+                                    <ShieldCheck className="h-4 w-4 mr-2" />
+                                    Unban
+                                  </>
+                                ) : (
+                                  <>
+                                    <ShieldOff className="h-4 w-4 mr-2" />
+                                    Ban
+                                  </>
+                                )}
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
