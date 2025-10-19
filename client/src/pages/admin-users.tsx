@@ -213,38 +213,6 @@ export default function AdminUsers() {
           <p className="text-muted-foreground">Manage user roles and permissions</p>
         </div>
 
-        {currentUser?.role === "ADMIN" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Reset Client Bookings</CardTitle>
-              <CardDescription>Delete all bookings made by CLIENT users</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Warning:</strong> This will permanently delete ALL bookings made by CLIENT role users. This action cannot be undone.
-                </AlertDescription>
-              </Alert>
-
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  if (confirm("Are you sure you want to delete ALL client bookings? This cannot be undone.")) {
-                    resetClientBookingsMutation.mutate();
-                  }
-                }}
-                disabled={resetClientBookingsMutation.isPending}
-                className="w-full"
-                data-testid="button-reset-client-bookings"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {resetClientBookingsMutation.isPending ? "Deleting..." : "Reset All Client Bookings"}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
           <CardHeader>
             <CardTitle>All Users</CardTitle>
@@ -454,6 +422,38 @@ export default function AdminUsers() {
             )}
           </CardContent>
         </Card>
+
+        {currentUser?.role === "ADMIN" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Reset Client Bookings</CardTitle>
+              <CardDescription>Delete all bookings made by CLIENT users</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Warning:</strong> This will permanently delete ALL bookings made by CLIENT role users. This action cannot be undone.
+                </AlertDescription>
+              </Alert>
+
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (confirm("Are you sure you want to delete ALL client bookings? This cannot be undone.")) {
+                    resetClientBookingsMutation.mutate();
+                  }
+                }}
+                disabled={resetClientBookingsMutation.isPending}
+                className="w-full"
+                data-testid="button-reset-client-bookings"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {resetClientBookingsMutation.isPending ? "Deleting..." : "Reset All Client Bookings"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
           <DialogContent>
