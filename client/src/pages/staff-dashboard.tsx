@@ -68,12 +68,12 @@ export default function StaffDashboard() {
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="max-w-6xl mx-auto space-y-4">
         {/* Welcome Header */}
         <div>
-          <h1 className="text-4xl font-bold mb-2">Welcome back, {firstName}!</h1>
-          <p className="text-lg text-muted-foreground">Your personal Club Alpha staff dashboard</p>
+          <h1 className="text-2xl font-bold mb-1">Welcome back, {firstName}!</h1>
+          <p className="text-sm text-muted-foreground">Your personal Club Alpha staff dashboard</p>
         </div>
 
         {/* Stats Cards */}
@@ -107,7 +107,7 @@ export default function StaffDashboard() {
         </div>
 
         {/* Profile and Today's Schedule Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Your Profile */}
           <Card>
             <CardHeader>
@@ -163,23 +163,23 @@ export default function StaffDashboard() {
             </CardHeader>
             <CardContent>
               {todayBookings.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground">
+                <div className="py-6 text-center text-sm text-muted-foreground">
                   No appointments scheduled for today
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {todayBookings.map((booking: BookingWithDetails) => (
                     <div
                       key={booking.id}
-                      className="p-4 rounded-md border bg-card hover-elevate"
+                      className="p-3 rounded-md border bg-card hover-elevate"
                       data-testid={`booking-${booking.id}`}
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{booking.client?.email || "Client"}</p>
-                          <p className="text-sm text-muted-foreground">{booking.service?.name}</p>
+                          <p className="text-sm font-medium truncate">{booking.client?.email || "Client"}</p>
+                          <p className="text-xs text-muted-foreground">{booking.service?.name}</p>
                         </div>
-                        <Badge variant="outline" className="flex-shrink-0">
+                        <Badge variant="outline" className="flex-shrink-0 text-xs">
                           {formatTimeRange(booking.startTime, booking.endTime)}
                         </Badge>
                       </div>
@@ -202,25 +202,25 @@ export default function StaffDashboard() {
           </CardHeader>
           <CardContent>
             {upcomingBookings.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">
+              <div className="py-6 text-center text-sm text-muted-foreground">
                 No upcoming appointments
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {upcomingBookings.map((booking: BookingWithDetails) => (
                   <div
                     key={booking.id}
-                    className="p-4 rounded-md border bg-card hover-elevate"
+                    className="p-3 rounded-md border bg-card hover-elevate"
                     data-testid={`upcoming-booking-${booking.id}`}
                   >
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Badge variant="outline">{booking.date}</Badge>
-                          <Badge variant="outline">{formatTimeRange(booking.startTime, booking.endTime)}</Badge>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-xs">{booking.date}</Badge>
+                          <Badge variant="outline" className="text-xs">{formatTimeRange(booking.startTime, booking.endTime)}</Badge>
                         </div>
-                        <p className="font-medium">{booking.client?.email || "Client"}</p>
-                        <p className="text-sm text-muted-foreground">{booking.service?.name}</p>
+                        <p className="text-sm font-medium">{booking.client?.email || "Client"}</p>
+                        <p className="text-xs text-muted-foreground">{booking.service?.name}</p>
                       </div>
                     </div>
                   </div>

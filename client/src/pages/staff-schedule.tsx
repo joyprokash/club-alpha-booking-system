@@ -82,41 +82,43 @@ export default function StaffScheduleWeekly() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="max-w-5xl mx-auto space-y-4">
         {/* Header */}
         <div>
-          <h1 className="text-4xl font-bold mb-2">My Schedule</h1>
-          <p className="text-lg text-muted-foreground">Your weekly appointment schedule</p>
+          <h1 className="text-2xl font-bold mb-1">My Schedule</h1>
+          <p className="text-sm text-muted-foreground">Your weekly appointment schedule</p>
         </div>
 
         {/* Week Navigation */}
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={goToPreviousWeek}
-                className="gap-2"
+                className="gap-1"
                 data-testid="button-prev-week"
               >
                 <ChevronLeft className="h-4 w-4" />
-                Previous Week
+                Previous
               </Button>
 
               <div className="text-center">
-                <p className="text-2xl font-bold">
+                <p className="text-base font-bold">
                   {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
                 </p>
               </div>
 
               <Button
                 variant="outline"
+                size="sm"
                 onClick={goToNextWeek}
-                className="gap-2"
+                className="gap-1"
                 data-testid="button-next-week"
               >
-                Next Week
+                Next
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -124,7 +126,7 @@ export default function StaffScheduleWeekly() {
         </Card>
 
         {/* Daily Breakdown */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {weekDays.map((date, index) => {
             const weekday = date.getDay();
             const dateStr = format(date, "yyyy-MM-dd");
@@ -152,18 +154,18 @@ export default function StaffScheduleWeekly() {
                 className={`${borderColorClass} ${isToday ? "border-2" : ""}`}
                 data-testid={`day-card-${index}`}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`h-3 w-3 rounded-full ${dotColorClass}`} />
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-2 w-2 rounded-full ${dotColorClass}`} />
                       <div>
-                        <h3 className="text-xl font-bold">
+                        <h3 className="text-sm font-bold">
                           {format(date, "EEEE, MMMM d")}
                         </h3>
                       </div>
                       {isToday && (
                         <Badge
-                          className="bg-purple-500 text-white"
+                          className="bg-purple-500 text-white text-xs"
                           data-testid="badge-today"
                         >
                           Today
@@ -171,42 +173,42 @@ export default function StaffScheduleWeekly() {
                       )}
                     </div>
 
-                    {hasWorkingHours && (
-                      <Badge variant="outline" className="text-sm">
+                    {hasWorkingHours && daySchedule.startTime !== null && daySchedule.endTime !== null && (
+                      <Badge variant="outline" className="text-xs">
                         {formatTimeRange(daySchedule.startTime, daySchedule.endTime)}
                       </Badge>
                     )}
                   </div>
 
                   {!hasWorkingHours ? (
-                    <div className="py-12 text-center text-muted-foreground">
+                    <div className="py-6 text-center text-sm text-muted-foreground">
                       Day Off
                     </div>
                   ) : dayBookings.length === 0 ? (
-                    <div className="py-12 text-center text-muted-foreground">
+                    <div className="py-6 text-center text-sm text-muted-foreground">
                       No appointments or time off scheduled
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {dayBookings.map((booking: BookingWithDetails) => (
                         <div
                           key={booking.id}
-                          className="p-4 rounded-md border bg-card hover-elevate"
+                          className="p-3 rounded-md border bg-card hover-elevate"
                           data-testid={`booking-${booking.id}`}
                         >
-                          <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center justify-between gap-3">
                             <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <Badge variant="outline">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="outline" className="text-xs">
                                   {formatTimeRange(booking.startTime, booking.endTime)}
                                 </Badge>
-                                <Badge variant="default" className="bg-purple-500">
+                                <Badge variant="default" className="bg-purple-500 text-xs">
                                   {booking.service?.name}
                                 </Badge>
                               </div>
-                              <p className="font-medium">{booking.client?.email || "Client"}</p>
+                              <p className="text-sm font-medium">{booking.client?.email || "Client"}</p>
                               {booking.notes && (
-                                <p className="text-sm text-muted-foreground mt-1">{booking.notes}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{booking.notes}</p>
                               )}
                             </div>
                           </div>
