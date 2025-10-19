@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/footer";
-import { User, Calendar, Lock, Users } from "lucide-react";
+import { User, Calendar, Lock, Users, Copy, Check } from "lucide-react";
 import logoUrl from "@assets/club-alpha-badge (1)_1760718368973.png";
 
 const loginSchema = z.object({
@@ -61,6 +61,7 @@ export default function Home() {
   const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -103,6 +104,24 @@ export default function Home() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string, fieldId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(fieldId);
+      toast({
+        title: "Copied to clipboard",
+        description: "Credential copied successfully",
+      });
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to copy",
+        description: "Please try again",
+      });
     }
   };
 
@@ -214,15 +233,51 @@ export default function Home() {
                   <CardContent className="space-y-2">
                     <div className="flex flex-col gap-1">
                       <span className="text-xs text-muted-foreground">Email</span>
-                      <code className="text-sm font-mono bg-muted px-2 py-1 rounded" data-testid={`text-email-${cred.role.toLowerCase()}`}>
-                        {cred.email}
-                      </code>
+                      <div className="flex items-center gap-2">
+                        <code className="text-sm font-mono bg-muted px-2 py-1 rounded flex-1" data-testid={`text-email-${cred.role.toLowerCase()}`}>
+                          {cred.email}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(cred.email, `${cred.role}-email`);
+                          }}
+                          data-testid={`button-copy-email-${cred.role.toLowerCase()}`}
+                        >
+                          {copiedField === `${cred.role}-email` ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-xs text-muted-foreground">Password</span>
-                      <code className="text-sm font-mono bg-muted px-2 py-1 rounded" data-testid={`text-password-${cred.role.toLowerCase()}`}>
-                        {cred.password}
-                      </code>
+                      <div className="flex items-center gap-2">
+                        <code className="text-sm font-mono bg-muted px-2 py-1 rounded flex-1" data-testid={`text-password-${cred.role.toLowerCase()}`}>
+                          {cred.password}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(cred.password, `${cred.role}-password`);
+                          }}
+                          data-testid={`button-copy-password-${cred.role.toLowerCase()}`}
+                        >
+                          {copiedField === `${cred.role}-password` ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
