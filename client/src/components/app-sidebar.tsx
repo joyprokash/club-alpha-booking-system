@@ -52,6 +52,11 @@ export function AppSidebar() {
       icon: Users,
     },
     {
+      title: "Import Hostesses",
+      url: "/admin/hostess-import",
+      icon: FileUp,
+    },
+    {
       title: "Services",
       url: "/admin/services",
       icon: Settings,
