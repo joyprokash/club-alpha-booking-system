@@ -22,6 +22,7 @@ The platform is built with a React 18, TypeScript, Vite frontend using TanStack 
 
 ### Technical Implementations
 - **Database Schema**: Core entities include `users`, `hostesses`, `services`, `bookings`, `timeOff`, `weeklySchedule`, `photoUploads`, and `auditLog`.
+- **Username-Based Authentication**: The platform uses username-based login instead of email-based authentication. Usernames are automatically extracted from email addresses during user creation (the part before @). For example, "admin@clubalpha.ca" becomes username "admin". All login flows (home page, dedicated login page) accept username + password credentials. The `users` table has a unique, non-nullable `username` column alongside the existing `email` column for backward compatibility.
 - **Automatic Data Cleanup**: Client booking history older than 2 weeks is automatically deleted every 24 hours to maintain privacy and database cleanliness. This cleanup runs on server startup and continues in the background.
 - **Time System**: All times are stored as minutes from midnight (0-1439). The system operates on a 10:00-23:00 grid in 15-minute increments, with a default timezone of America/Toronto.
 - **Double-Booking Prevention**: Utilizes serializable transactions with advisory locks per `(hostessId, date)`, validating against existing bookings, time-off blocks, and weekly schedules to prevent conflicts.
