@@ -125,39 +125,79 @@ client3@example.com`;
       <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>CSV Format & Instructions</CardTitle>
+            <CardTitle>How to Import Clients</CardTitle>
             <CardDescription>
-              Simple one-column format for fast processing
+              Follow these steps to successfully import your client list
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Step 1: Prepare Your CSV File</h4>
+                <p className="text-sm text-muted-foreground">
+                  Your CSV file should have just one column with the header "email". Download the template below to get started.
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Step 2: Upload or Paste</h4>
+                <p className="text-sm text-muted-foreground">
+                  Either upload your CSV file using the file picker below, or paste the CSV data directly into the text area.
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Step 3: Review Count & Import</h4>
+                <p className="text-sm text-muted-foreground">
+                  The system will show you how many clients are ready to import. Click "Import Clients" to start the process.
+                </p>
+              </div>
+            </div>
+
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                <strong>Format:</strong> Just one column with header "email"
+                <strong>What Happens During Import:</strong>
                 <br />
-                <strong>Processing:</strong> Batched in groups of 100 for optimal performance
+                • <strong>Usernames:</strong> Automatically extracted from emails (part before @)
                 <br />
-                <strong>Credentials:</strong> Usernames extracted from emails (part before @), temporary passwords auto-generated
+                • <strong>Example:</strong> john.smith@example.com → username: "john.smith"
                 <br />
-                <strong>First login:</strong> All clients will be required to set their own password on first login
+                • <strong>Passwords:</strong> Temporary passwords auto-generated
                 <br />
-                <strong>Performance:</strong> 14,000 clients typically process in 2-3 minutes
+                • <strong>First Login:</strong> All clients must set their own password when they first log in
+                <br />
+                • <strong>Duplicates:</strong> Existing emails are automatically skipped (no duplicates created)
+              </AlertDescription>
+            </Alert>
+
+            <Alert className="border-green-500/50 bg-green-500/10">
+              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertDescription className="text-green-800 dark:text-green-200">
+                <strong>Performance & Capacity:</strong>
+                <br />
+                • <strong>Speed:</strong> ~1,000 clients per minute (~2-3 min for 14,000 clients)
+                <br />
+                • <strong>Batch Processing:</strong> Clients processed in groups of 100 for optimal performance
+                <br />
+                • <strong>Maximum:</strong> Up to 20,000 clients per import
+                <br />
+                • <strong>After Import:</strong> Clients appear immediately in the clients list (cache auto-refreshes)
               </AlertDescription>
             </Alert>
 
             <Alert className="border-amber-500/50 bg-amber-500/10">
               <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               <AlertDescription className="text-amber-800 dark:text-amber-200">
-                <strong>Large Imports:</strong> For 14,000+ clients:
+                <strong>Important for Large Imports (14,000+ clients):</strong>
                 <br />
-                • Keep the browser tab open during import
+                • Keep this browser tab open during the entire import
                 <br />
-                • Don't navigate away until complete
+                • Don't navigate away or refresh the page until complete
                 <br />
-                • Processing time: ~1-3 minutes per 1,000 clients
+                • Wait for the "Import completed" message before proceeding
                 <br />
-                • Duplicate emails will be skipped automatically
+                • If any clients fail, you can download the failed rows and try again
               </AlertDescription>
             </Alert>
 
