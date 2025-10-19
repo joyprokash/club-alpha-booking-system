@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/footer";
-import { User, Calendar, Lock } from "lucide-react";
+import { User, Calendar, Lock, Users } from "lucide-react";
 import logoUrl from "@assets/club-alpha-badge (1)_1760718368973.png";
 
 const loginSchema = z.object({
@@ -37,6 +37,14 @@ const loginCredentials = [
     password: "reception123",
     description: "Calendar view, create bookings, manage schedules",
     color: "text-blue-500",
+  },
+  {
+    role: "STAFF",
+    icon: Users,
+    email: "staff@clubalpha.ca",
+    password: "staff123",
+    description: "Manage personal schedule, upload photos, view bookings",
+    color: "text-green-500",
   },
   {
     role: "CLIENT",

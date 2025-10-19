@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { registerExtendedRoutes } from "./routes-extended";
 import { setupVite, serveStatic, log } from "./vite";
+import { scheduleBookingCleanup } from "./cleanup";
 
 const app = express();
 
@@ -85,5 +86,8 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Schedule automatic cleanup of client booking history older than 2 weeks
+    scheduleBookingCleanup();
   });
 })();

@@ -40,7 +40,18 @@ async function seed() {
     }).returning();
     console.log(`   ✓ Reception created: ${receptionUser.email}`);
 
-    // 3. Create Services
+    // 3. Create Staff User (Demo Hostess Account)
+    console.log("👤 Creating staff user...");
+    const staffPassword = await bcrypt.hash("staff123", SALT_ROUNDS);
+    const [staffUser] = await db.insert(users).values({
+      email: "staff@clubalpha.ca",
+      passwordHash: staffPassword,
+      role: "STAFF",
+      forcePasswordReset: false,
+    }).returning();
+    console.log(`   ✓ Staff created: ${staffUser.email}`);
+
+    // 4. Create Services
     console.log("\n💆 Creating services...");
     const serviceData = [
       { name: "Express Session", durationMin: 15, priceCents: 3000 },
@@ -58,7 +69,7 @@ async function seed() {
     const createdServices = await db.insert(services).values(serviceData).returning();
     console.log(`   ✓ Created ${createdServices.length} services`);
 
-    // 4. Create Hostesses (10 Downtown, 10 West End)
+    // 5. Create Hostesses (10 Downtown, 10 West End)
     console.log("\n👯 Creating hostesses...");
     const hostessData = [
       // Downtown
@@ -89,7 +100,13 @@ async function seed() {
     const createdHostesses = await db.insert(hostesses).values(hostessData).returning();
     console.log(`   ✓ Created ${createdHostesses.length} hostesses`);
 
-    // 5. Create Weekly Schedules for all hostesses
+    // Link staff user to first hostess for demo purposes
+    await db.update(hostesses)
+      .set({ userId: staffUser.id })
+      .where(eq(hostesses.id, createdHostesses[0].id));
+    console.log(`   ✓ Linked staff user to ${createdHostesses[0].displayName} (${createdHostesses[0].slug})`);
+
+    // 6. Create Weekly Schedules for all hostesses
     console.log("\n📅 Creating weekly schedules...");
     const scheduleData = [];
     
@@ -118,7 +135,7 @@ async function seed() {
     await db.insert(weeklySchedule).values(scheduleData);
     console.log(`   ✓ Created ${scheduleData.length} weekly schedule entries`);
 
-    // 6. Create Client Users
+    // 7. Create Client Users
     console.log("\n👥 Creating client users...");
     const clientData = [];
     const clientPassword = await bcrypt.hash("client123", SALT_ROUNDS);
@@ -135,7 +152,7 @@ async function seed() {
     const createdClients = await db.insert(users).values(clientData).returning();
     console.log(`   ✓ Created ${createdClients.length} clients`);
 
-    // 7. Create Sample Bookings (only on weekdays, respecting schedule)
+    // 8. Create Sample Bookings (only on weekdays, respecting schedule)
     console.log("\n📝 Creating sample bookings...");
     const bookingData = [];
     const today = new Date();
