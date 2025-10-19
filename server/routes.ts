@@ -598,6 +598,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reset all client bookings (ADMIN only)
+  app.delete("/api/admin/bookings/reset-clients", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const deletedCount = await storage.deleteAllClientBookings();
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entity: "booking",
+        entityId: "bulk",
+        meta: { action: "reset_all_client_bookings", count: deletedCount },
+      });
+
+      res.json({ success: true, deletedCount });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Cancel booking
   app.post("/api/bookings/:id/cancel", authenticateToken, async (req: AuthRequest, res, next) => {
     try {

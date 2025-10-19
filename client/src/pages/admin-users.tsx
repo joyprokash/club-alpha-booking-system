@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { UserCog, FileUp, AlertCircle, CheckCircle2, XCircle, KeyRound, ShieldOff, ShieldCheck } from "lucide-react";
+import { UserCog, FileUp, AlertCircle, CheckCircle2, XCircle, KeyRound, ShieldOff, ShieldCheck, Trash2 } from "lucide-react";
 import type { User, Hostess } from "@shared/schema";
 
 export default function AdminUsers() {
@@ -115,6 +115,27 @@ export default function AdminUsers() {
     },
   });
 
+  const resetClientBookingsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", "/api/admin/bookings/reset-clients", {});
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      toast({
+        title: "Client bookings reset",
+        description: `Successfully deleted ${data.deletedCount} client booking(s)`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to reset bookings",
+        description: error.message,
+      });
+    },
+  });
+
   const handleUpdate = () => {
     if (!editingUser || !selectedRole) return;
     
@@ -185,12 +206,13 @@ export default function AdminUsers() {
           <p className="text-muted-foreground">Manage user roles and permissions</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Bulk Import Users</CardTitle>
-            <CardDescription>Upload a CSV file to create multiple users at once</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bulk Import Users</CardTitle>
+              <CardDescription>Upload a CSV file to create multiple users at once</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
@@ -283,6 +305,37 @@ export default function AdminUsers() {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Reset Client Bookings</CardTitle>
+            <CardDescription>Delete all bookings made by CLIENT users</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Warning:</strong> This will permanently delete ALL bookings made by CLIENT role users. This action cannot be undone.
+              </AlertDescription>
+            </Alert>
+
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirm("Are you sure you want to delete ALL client bookings? This cannot be undone.")) {
+                  resetClientBookingsMutation.mutate();
+                }
+              }}
+              disabled={resetClientBookingsMutation.isPending}
+              className="w-full"
+              data-testid="button-reset-client-bookings"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {resetClientBookingsMutation.isPending ? "Deleting..." : "Reset All Client Bookings"}
+            </Button>
+          </CardContent>
+        </Card>
+        </div>
 
         <Card>
           <CardHeader>

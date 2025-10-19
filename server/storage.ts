@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, and, gte, lte, or, desc, asc } from "drizzle-orm";
+import { eq, and, gte, lte, or, desc, asc, inArray } from "drizzle-orm";
 import type {
   User,
   InsertUser,
@@ -66,6 +66,7 @@ export interface IStorage {
   getAllBookings(): Promise<BookingWithDetails[]>;
   createBooking(booking: InsertBooking): Promise<Booking>;
   updateBooking(id: string, data: Partial<Booking>): Promise<Booking>;
+  deleteAllClientBookings(): Promise<number>;
 
   // Time Off operations
   getTimeOffByHostess(hostessId: string, date?: string): Promise<TimeOff[]>;
@@ -328,6 +329,23 @@ export class DbStorage implements IStorage {
   async updateBooking(id: string, data: Partial<Booking>): Promise<Booking> {
     const result = await db.update(bookings).set(data).where(eq(bookings.id, id)).returning();
     return result[0];
+  }
+
+  async deleteAllClientBookings(): Promise<number> {
+    // Get all CLIENT user IDs
+    const clientUsers = await db.select({ id: users.id }).from(users).where(eq(users.role, "CLIENT"));
+    const clientIds = clientUsers.map(u => u.id);
+    
+    if (clientIds.length === 0) {
+      return 0;
+    }
+    
+    // Delete all bookings made by CLIENT users
+    const result = await db.delete(bookings).where(
+      inArray(bookings.clientId, clientIds)
+    ).returning();
+    
+    return result.length;
   }
 
   // Time Off operations
