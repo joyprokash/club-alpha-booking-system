@@ -18,8 +18,8 @@ import { z } from "zod";
 // Users Table
 export const users = mysqlTable("users", {
   id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
+  username: varchar("username", { length: 191 }).notNull().unique(),
+  email: varchar("email", { length: 191 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: mysqlEnum("role", ['ADMIN', 'STAFF', 'RECEPTION', 'CLIENT']).notNull().default('CLIENT'),
   forcePasswordReset: boolean("force_password_reset").notNull().default(false),
@@ -30,8 +30,8 @@ export const users = mysqlTable("users", {
 // Hostesses Table
 export const hostesses = mysqlTable("hostesses", {
   id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  slug: text("slug").notNull().unique(),
-  displayName: text("display_name").notNull(),
+  slug: varchar("slug", { length: 191 }).notNull().unique(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
   bio: text("bio"),
   specialties: json("specialties").$type<string[]>(),
   location: mysqlEnum("location", ['DOWNTOWN', 'WEST_END']).notNull(),
