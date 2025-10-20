@@ -372,6 +372,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve hostess photos
   app.use("/api/assets/hostess-photos", express.static(path.join(process.cwd(), "attached_assets", "hostess-photos")));
 
+  // Serve Open Graph logo
+  app.use("/api/assets", express.static(path.join(process.cwd(), "attached_assets")));
+
   // ==================== SERVICE ENDPOINTS ====================
   
   // Get all services
