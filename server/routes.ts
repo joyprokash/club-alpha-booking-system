@@ -723,6 +723,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get combined staff overview (optimized single endpoint)
+  app.get("/api/staff/overview", authenticateToken, requireRole("STAFF"), async (req: AuthRequest, res, next) => {
+    try {
+      // Find staff's linked hostess
+      const hostesses = await storage.getHostesses();
+      const linkedHostess = hostesses.find(h => h.userId === req.user?.id);
+      
+      if (!linkedHostess) {
+        return res.json({
+          hostess: null,
+          todayBookings: [],
+          tomorrowBookings: [],
+          todayTimeOff: [],
+          weeklySchedule: [],
+          upcomingBookings: []
+        });
+      }
+
+      // Get all data in parallel for maximum efficiency
+      const today = getCurrentDateToronto();
+      const tomorrow = format(addDays(toZonedTime(new Date(), "America/Toronto"), 1), "yyyy-MM-dd");
+
+      const [
+        todayAllBookings,
+        tomorrowAllBookings,
+        allTimeOff,
+        weeklySchedule,
+        upcomingAllBookings
+      ] = await Promise.all([
+        storage.getBookingsByDate(today),
+        storage.getBookingsByDate(tomorrow),
+        storage.getTimeOffByHostess(linkedHostess.id),
+        storage.getWeeklyScheduleByHostess(linkedHostess.id),
+        storage.getUpcomingBookings(30)
+      ]);
+
+      // Filter bookings for this staff's hostess
+      const todayBookings = todayAllBookings.filter(b => 
+        b.hostessId === linkedHostess.id && b.status !== "CANCELED"
+      );
+
+      const tomorrowBookings = tomorrowAllBookings.filter(b => 
+        b.hostessId === linkedHostess.id && b.status !== "CANCELED"
+      );
+
+      const todayTimeOff = allTimeOff.filter(t => t.date === today);
+
+      const upcomingBookings = upcomingAllBookings
+        .filter(b => b.hostessId === linkedHostess.id && b.status !== "CANCELED")
+        .slice(0, 10);
+
+      res.json({
+        hostess: linkedHostess,
+        todayBookings,
+        tomorrowBookings,
+        todayTimeOff,
+        weeklySchedule,
+        upcomingBookings
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Upload profile photo for staff's linked hostess (creates pending upload for admin approval)
   app.post("/api/staff/profile-photo", 
     authenticateToken, 

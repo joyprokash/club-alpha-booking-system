@@ -3,54 +3,52 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar, Clock, CalendarX, User } from "lucide-react";
-import { formatTimeRange, getCurrentDateToronto, getTomorrowDateToronto } from "@/lib/time-utils";
+import { formatTimeRange } from "@/lib/time-utils";
 import type { BookingWithDetails, Hostess, TimeOff, WeeklySchedule } from "@shared/schema";
 import { useAuth } from "@/lib/auth-context";
 
+interface StaffOverview {
+  hostess: Hostess | null;
+  todayBookings: BookingWithDetails[];
+  tomorrowBookings: BookingWithDetails[];
+  todayTimeOff: TimeOff[];
+  weeklySchedule: WeeklySchedule[];
+  upcomingBookings: BookingWithDetails[];
+}
+
 export default function StaffDashboard() {
   const { user } = useAuth();
-  const today = getCurrentDateToronto();
-  const tomorrow = getTomorrowDateToronto();
 
-  // Get staff's linked hostess
-  const { data: linkedHostess } = useQuery<Hostess>({
-    queryKey: ["/api/staff/hostess"],
+  // Get all staff data in one optimized API call
+  const { data: overview, isLoading } = useQuery<StaffOverview>({
+    queryKey: ["/api/staff/overview"],
   });
 
-  // Get today's bookings
-  const { data: todayBookings = [] } = useQuery<BookingWithDetails[]>({
-    queryKey: ["/api/staff/bookings/today"],
-    enabled: !!linkedHostess,
-  });
+  const linkedHostess = overview?.hostess;
+  const todayBookings = overview?.todayBookings || [];
+  const tomorrowBookings = overview?.tomorrowBookings || [];
+  const todayTimeOff = overview?.todayTimeOff || [];
+  const weeklySchedule = overview?.weeklySchedule || [];
+  const upcomingBookings = overview?.upcomingBookings || [];
 
-  // Get tomorrow's bookings
-  const { data: tomorrowBookings = [] } = useQuery<BookingWithDetails[]>({
-    queryKey: ["/api/staff/bookings/tomorrow"],
-    enabled: !!linkedHostess,
-  });
-
-  // Get today's time off
-  const { data: todayTimeOff = [] } = useQuery<TimeOff[]>({
-    queryKey: ["/api/staff/time-off/today"],
-    enabled: !!linkedHostess,
-  });
-
-  // Get upcoming bookings
-  const { data: upcomingBookings = [] } = useQuery<BookingWithDetails[]>({
-    queryKey: ["/api/staff/bookings/upcoming"],
-    enabled: !!linkedHostess,
-  });
-
-  // Get weekly schedule
-  const { data: weeklySchedule = [] } = useQuery<WeeklySchedule[]>({
-    queryKey: ["/api/staff/weekly-schedule"],
-    enabled: !!linkedHostess,
-  });
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background p-4 md:p-6">
+        <div className="max-w-6xl mx-auto">
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">Loading your dashboard...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (!linkedHostess) {
     return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-background p-4 md:p-6">
+        <div className="max-w-6xl mx-auto">
           <Card>
             <CardContent className="p-8 text-center">
               <p className="text-muted-foreground">
