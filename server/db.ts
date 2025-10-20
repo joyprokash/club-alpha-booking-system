@@ -1,15 +1,12 @@
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
 import * as schema from "@shared/schema";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 
-// Use standard PostgreSQL driver for Replit/Supabase
-const queryClient = postgres(process.env.DATABASE_URL, {
-  ssl: process.env.NODE_ENV === 'production' ? 'require' : 'prefer',
-  max: 10,
-});
+// Create MySQL connection pool
+const poolConnection = mysql.createPool(process.env.DATABASE_URL);
 
-export const db = drizzle(queryClient, { schema });
+export const db = drizzle(poolConnection, { schema, mode: 'default' });
