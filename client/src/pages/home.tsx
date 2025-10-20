@@ -138,7 +138,7 @@ export default function Home() {
           
           {/* Contact Information */}
           <p className="text-lg font-medium mb-4">
-            Call: 613-508-1100, Text Message: (613)-707-7773
+            Call: 613-508-1100, Text Message: 613-707-7773
           </p>
           
           {/* First-time visitor notice */}
