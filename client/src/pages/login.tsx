@@ -81,7 +81,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-3">
           <div className="flex justify-center">
-            <img src={logoUrl} alt="Club Alpha" className="h-20 w-20" />
+            <img src={logoUrl} alt="Club Alpha" className="h-40 w-40" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
           <CardDescription className="text-center">Sign in to your Club Alpha account</CardDescription>
