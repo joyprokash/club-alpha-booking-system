@@ -1,67 +1,161 @@
 # Club Alpha - MySQL Deployment Guide for GoDaddy VPS
 
-## ✅ Completed MySQL Conversion
+## ⚠️ Important: Two Versions Available
 
-Your application has been successfully converted from PostgreSQL to MySQL. Here's what has been changed:
+Your Club Alpha application currently runs on **PostgreSQL** in the Replit environment. When you're ready to deploy to your GoDaddy VPS with MySQL, you'll need to make the conversion changes outlined below.
 
-### Code Changes Made:
-1. ✅ **Dependencies Updated**
-   - Removed: `postgres`, `@neondatabase/serverless`
-   - Added: `mysql2`
-
-2. ✅ **Database Driver Updated** (`server/db.ts`)
-   - Now uses MySQL connection pool
-   - Updated to use `drizzle-orm/mysql2`
-
-3. ✅ **Schema Converted** (`shared/schema.ts`)
-   - Changed from `pgTable` → `mysqlTable`
-   - Changed from `pgEnum` → `mysqlEnum`
-   - Changed from `integer` → `int`
-   - Changed from `jsonb` → `json`
-   - Converted array columns to JSON (MySQL doesn't support native arrays)
-   - Updated UUID generation to use `crypto.randomUUID()`
+### Current Status:
+- **Replit Environment**: ✅ Running on PostgreSQL
+- **VPS Deployment**: 📋 Ready for MySQL conversion
 
 ---
 
-## 🚀 GoDaddy VPS Deployment Instructions
+## 🔄 Converting to MySQL for VPS Deployment
 
-### Step 1: Prepare Your Files
+When you're ready to deploy to your GoDaddy VPS, follow these steps to convert the application from PostgreSQL to MySQL:
 
-Before uploading to your VPS, you need to make **ONE MANUAL CHANGE**:
+### Step 1: Download and Prepare Files
 
-**Edit `drizzle.config.ts`** (locally before uploading):
+1. **Download project from Replit**
+   - Click the three dots (⋮) menu → Download as ZIP
+   - Extract the ZIP file on your computer
+
+2. **Make the following changes to the downloaded files:**
+
+### Step 2: Update Package Dependencies
+
+Edit `package.json` and make these changes:
+
+**Remove these packages:**
+```json
+"postgres": "^3.4.5",
+"@neondatabase/serverless": "^0.10.4"
+```
+
+**Add this package:**
+```json
+"mysql2": "^3.11.5"
+```
+
+### Step 3: Update Database Driver (`server/db.ts`)
+
+Replace the entire file with:
 
 ```typescript
-import { defineConfig } from "drizzle-kit";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
+import * as schema from "@shared/schema";
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
+  throw new Error("DATABASE_URL environment variable is required");
 }
 
+// Create MySQL connection pool
+const poolConnection = mysql.createPool(process.env.DATABASE_URL);
+
+export const db = drizzle(poolConnection, { schema, mode: 'default' });
+```
+
+### Step 4: Update Database Schema (`shared/schema.ts`)
+
+Replace the **import section** at the top:
+
+**Change FROM:**
+```typescript
+import { 
+  pgTable, 
+  text, 
+  uuid, 
+  timestamp, 
+  pgEnum,
+  boolean,
+  integer,
+  date,
+  jsonb,
+  index,
+  unique
+} from "drizzle-orm/pg-core";
+```
+
+**Change TO:**
+```typescript
+import { 
+  mysqlTable, 
+  text, 
+  varchar, 
+  timestamp, 
+  mysqlEnum,
+  boolean,
+  int,
+  date,
+  json,
+  index,
+  unique
+} from "drizzle-orm/mysql-core";
+```
+
+**Then update the enums and tables:**
+
+```typescript
+// Change enum definitions from:
+export const userRoleEnum = pgEnum("role", ['ADMIN', 'STAFF', 'RECEPTION', 'CLIENT']);
+export const locationEnum = pgEnum("location", ['DOWNTOWN', 'WEST_END']);
+export const bookingStatusEnum = pgEnum("booking_status", ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELED']);
+export const photoStatusEnum = pgEnum("photo_status", ['PENDING', 'APPROVED', 'REJECTED']);
+
+// To:
+// (Remove the export const declarations and use inline enums)
+
+// Update each table:
+// 1. Change pgTable → mysqlTable
+// 2. Change uuid() → varchar("column_name", { length: 36 })
+// 3. Change .defaultRandom() → .$defaultFn(() => crypto.randomUUID())
+// 4. Change integer → int
+// 5. Change pgEnum references to mysqlEnum inline
+// 6. Change text().array() → json().$type<string[]>() (for specialties field only)
+// 7. Change jsonb → json
+
+// Example for users table:
+export const users = mysqlTable("users", {
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+  username: varchar("username", { length: 191 }).notNull().unique(),
+  email: varchar("email", { length: 191 }).notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  role: mysqlEnum("role", ['ADMIN', 'STAFF', 'RECEPTION', 'CLIENT']).notNull().default('CLIENT'),
+  forcePasswordReset: boolean("force_password_reset").notNull().default(false),
+  banned: boolean("banned").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Apply similar changes to all other tables
+```
+
+### Step 5: Update Drizzle Config (`drizzle.config.ts`)
+
+Change the dialect:
+
+```typescript
 export default defineConfig({
   out: "./migrations",
   schema: "./shared/schema.ts",
-  dialect: "mysql",  // ← CHANGE THIS FROM "postgresql" to "mysql"
+  dialect: "mysql",  // ← Change from "postgresql" to "mysql"
   dbCredentials: {
     url: process.env.DATABASE_URL,
   },
 });
 ```
 
-### Step 2: Download Project from Replit
+---
 
-1. In Replit, click the three dots (⋮) menu
-2. Select "Download as ZIP"
-3. Extract the ZIP file on your computer
-4. Make the drizzle.config.ts change mentioned above
+## 🚀 GoDaddy VPS Deployment Instructions
 
-### Step 3: Connect to Your VPS
+### Step 1: Connect to Your VPS
 
 ```bash
 ssh root@your-vps-ip-address
 ```
 
-### Step 4: Install Node.js
+### Step 2: Install Node.js
 
 ```bash
 # Update system
@@ -76,7 +170,7 @@ node --version
 npm --version
 ```
 
-### Step 5: Install MySQL
+### Step 3: Install MySQL
 
 ```bash
 # Install MySQL Server
@@ -97,7 +191,7 @@ sudo systemctl start mysql
 sudo systemctl enable mysql
 ```
 
-### Step 6: Create Database and User
+### Step 4: Create Database and User
 
 ```bash
 # Login to MySQL
@@ -111,9 +205,9 @@ FLUSH PRIVILEGES;
 EXIT;
 ```
 
-### Step 7: Upload Application to VPS
+### Step 5: Upload Application to VPS
 
-**From your local computer:**
+**From your local computer (after making the MySQL changes):**
 
 ```bash
 # Create directory on VPS
@@ -126,7 +220,7 @@ scp -r ./* root@your-vps-ip:/var/www/clubalpha/
 rsync -avz --exclude 'node_modules' ./ root@your-vps-ip:/var/www/clubalpha/
 ```
 
-### Step 8: Set Up Application on VPS
+### Step 6: Set Up Application on VPS
 
 ```bash
 # SSH into VPS
@@ -155,7 +249,7 @@ SESSION_SECRET=another_very_long_random_secret_min_32_chars_here
 
 Save (Ctrl+X, Y, Enter)
 
-### Step 9: Run Database Migration
+### Step 7: Run Database Migration
 
 ```bash
 # Push schema to MySQL database
@@ -165,14 +259,14 @@ npm run db:push
 npm run db:push --force
 ```
 
-### Step 10: Build Frontend
+### Step 8: Build Frontend
 
 ```bash
 # Build the React frontend
 npm run build
 ```
 
-### Step 11: Start Application with PM2
+### Step 9: Start Application with PM2
 
 ```bash
 # Start the app
@@ -193,7 +287,7 @@ pm2 status
 pm2 logs clubalpha
 ```
 
-### Step 12: Install Nginx
+### Step 10: Install Nginx
 
 ```bash
 # Install Nginx
@@ -236,7 +330,7 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-### Step 13: Install SSL Certificate (Free)
+### Step 11: Install SSL Certificate (Free)
 
 ```bash
 # Install Certbot
@@ -248,7 +342,7 @@ sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
 # Follow prompts and choose option 2 (redirect HTTP to HTTPS)
 ```
 
-### Step 14: Configure Firewall
+### Step 12: Configure Firewall
 
 ```bash
 # Allow necessary ports
@@ -258,7 +352,7 @@ sudo ufw enable
 sudo ufw status
 ```
 
-### Step 15: Point Domain to VPS
+### Step 13: Point Domain to VPS
 
 In your **GoDaddy DNS Settings**:
 
@@ -387,22 +481,26 @@ Once deployed, visit: `https://yourdomain.com`
 
 ---
 
-## 📊 Important Notes
+## 📊 Key MySQL Conversion Notes
 
 1. **MySQL vs PostgreSQL Arrays**: 
-   - The `specialties` field is now stored as JSON instead of a native array
+   - The `specialties` field is stored as JSON instead of a native array
    - Your application handles this automatically
    - No code changes needed in your application logic
 
 2. **UUID Generation**:
-   - Now uses JavaScript's `crypto.randomUUID()` instead of PostgreSQL's `gen_random_uuid()`
+   - Uses JavaScript's `crypto.randomUUID()` instead of PostgreSQL's `gen_random_uuid()`
    - Works identically, no application changes needed
 
-3. **Performance**:
+3. **VARCHAR Length Requirements**:
+   - MySQL requires explicit length for unique fields (username, email, slug)
+   - These are set to 191 (MySQL's max for unique indexes with UTF8MB4)
+
+4. **Performance**:
    - MySQL performs excellently for this application size
    - Consider adding indexes if you have >10,000 bookings
 
-4. **Backups**:
+5. **Backups**:
    - Set up automated MySQL backups using cron
    - Backup both database and uploaded photos in `attached_assets/`
 
