@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { 
   pgTable, 
   text, 
-  uuid, 
+  varchar, 
   timestamp, 
   pgEnum,
   boolean,
@@ -16,14 +16,14 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Enums
-export const userRoleEnum = pgEnum("role", ['ADMIN', 'STAFF', 'RECEPTION', 'CLIENT']);
-export const locationEnum = pgEnum("location", ['DOWNTOWN', 'WEST_END']);
-export const bookingStatusEnum = pgEnum("booking_status", ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELED']);
-export const photoStatusEnum = pgEnum("photo_status", ['PENDING', 'APPROVED', 'REJECTED']);
+export const userRoleEnum = pgEnum('user_role', ['ADMIN', 'STAFF', 'RECEPTION', 'CLIENT']);
+export const locationEnum = pgEnum('location', ['DOWNTOWN', 'WEST_END']);
+export const bookingStatusEnum = pgEnum('booking_status', ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELED']);
+export const photoUploadStatusEnum = pgEnum('photo_upload_status', ['PENDING', 'APPROVED', 'REJECTED']);
 
 // Users Table
 export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
@@ -35,7 +35,7 @@ export const users = pgTable("users", {
 
 // Hostesses Table
 export const hostesses = pgTable("hostesses", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   slug: text("slug").notNull().unique(),
   displayName: text("display_name").notNull(),
   bio: text("bio"),
@@ -43,13 +43,13 @@ export const hostesses = pgTable("hostesses", {
   location: locationEnum("location").notNull(),
   photoUrl: text("photo_url"),
   active: boolean("active").notNull().default(true),
-  userId: uuid("user_id").references(() => users.id),
+  userId: varchar("user_id").references(() => users.id), // Link to staff user
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Services Table
 export const services = pgTable("services", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   durationMin: integer("duration_min").notNull(),
   priceCents: integer("price_cents").notNull(),
@@ -57,13 +57,13 @@ export const services = pgTable("services", {
 
 // Bookings Table
 export const bookings = pgTable("bookings", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   date: date("date").notNull(),
-  startTime: integer("start_time").notNull(),
-  endTime: integer("end_time").notNull(),
-  hostessId: uuid("hostess_id").notNull().references(() => hostesses.id),
-  clientId: uuid("client_id").notNull().references(() => users.id),
-  serviceId: uuid("service_id").notNull().references(() => services.id),
+  startTime: integer("start_time").notNull(), // minutes from midnight
+  endTime: integer("end_time").notNull(), // minutes from midnight
+  hostessId: varchar("hostess_id").notNull().references(() => hostesses.id),
+  clientId: varchar("client_id").notNull().references(() => users.id),
+  serviceId: varchar("service_id").notNull().references(() => services.id),
   status: bookingStatusEnum("status").notNull().default('PENDING'),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -75,8 +75,8 @@ export const bookings = pgTable("bookings", {
 
 // Time Off Table
 export const timeOff = pgTable("time_off", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  hostessId: uuid("hostess_id").notNull().references(() => hostesses.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  hostessId: varchar("hostess_id").notNull().references(() => hostesses.id),
   date: date("date").notNull(),
   startTime: integer("start_time").notNull(),
   endTime: integer("end_time").notNull(),
@@ -88,11 +88,11 @@ export const timeOff = pgTable("time_off", {
 
 // Weekly Schedule Table
 export const weeklySchedule = pgTable("weekly_schedule", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  hostessId: uuid("hostess_id").notNull().references(() => hostesses.id),
-  weekday: integer("weekday").notNull(),
-  startTime: integer("start_time"),
-  endTime: integer("end_time"),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  hostessId: varchar("hostess_id").notNull().references(() => hostesses.id),
+  weekday: integer("weekday").notNull(), // 0=Sun, 1=Mon, ..., 6=Sat
+  startTime: integer("start_time"), // Shift start (minutes from midnight)
+  endTime: integer("end_time"), // Shift end (minutes from midnight)
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   uniqueHostessWeekday: unique("unique_hostess_weekday").on(table.hostessId, table.weekday),
@@ -100,8 +100,8 @@ export const weeklySchedule = pgTable("weekly_schedule", {
 
 // Audit Log Table
 export const auditLog = pgTable("audit_log", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
   action: text("action").notNull(),
   entity: text("entity").notNull(),
   entityId: text("entity_id").notNull(),
@@ -114,12 +114,12 @@ export const auditLog = pgTable("audit_log", {
 
 // Photo Uploads Table
 export const photoUploads = pgTable("photo_uploads", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  hostessId: uuid("hostess_id").notNull().references(() => hostesses.id),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  hostessId: varchar("hostess_id").notNull().references(() => hostesses.id),
   photoUrl: text("photo_url").notNull(),
-  status: photoStatusEnum("status").notNull().default('PENDING'),
+  status: photoUploadStatusEnum("status").notNull().default('PENDING'),
   uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
-  reviewedBy: uuid("reviewed_by").references(() => users.id),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
   reviewedAt: timestamp("reviewed_at"),
 }, (table) => ({
   hostessIdx: index("photo_uploads_hostess_idx").on(table.hostessId),
