@@ -1,64 +1,70 @@
 import { sql } from "drizzle-orm";
 import { 
-  mysqlTable, 
+  pgTable, 
   text, 
-  varchar, 
+  uuid, 
   timestamp, 
-  mysqlEnum,
+  pgEnum,
   boolean,
-  int,
+  integer,
   date,
-  json,
+  jsonb,
   index,
   unique
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Enums
+export const userRoleEnum = pgEnum("role", ['ADMIN', 'STAFF', 'RECEPTION', 'CLIENT']);
+export const locationEnum = pgEnum("location", ['DOWNTOWN', 'WEST_END']);
+export const bookingStatusEnum = pgEnum("booking_status", ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELED']);
+export const photoStatusEnum = pgEnum("photo_status", ['PENDING', 'APPROVED', 'REJECTED']);
+
 // Users Table
-export const users = mysqlTable("users", {
-  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  username: varchar("username", { length: 191 }).notNull().unique(),
-  email: varchar("email", { length: 191 }).notNull().unique(),
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  role: mysqlEnum("role", ['ADMIN', 'STAFF', 'RECEPTION', 'CLIENT']).notNull().default('CLIENT'),
+  role: userRoleEnum("role").notNull().default('CLIENT'),
   forcePasswordReset: boolean("force_password_reset").notNull().default(false),
   banned: boolean("banned").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Hostesses Table
-export const hostesses = mysqlTable("hostesses", {
-  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  slug: varchar("slug", { length: 191 }).notNull().unique(),
-  displayName: varchar("display_name", { length: 255 }).notNull(),
+export const hostesses = pgTable("hostesses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  displayName: text("display_name").notNull(),
   bio: text("bio"),
-  specialties: json("specialties").$type<string[]>(),
-  location: mysqlEnum("location", ['DOWNTOWN', 'WEST_END']).notNull(),
+  specialties: text("specialties").array(),
+  location: locationEnum("location").notNull(),
   photoUrl: text("photo_url"),
   active: boolean("active").notNull().default(true),
-  userId: varchar("user_id", { length: 36 }).references(() => users.id),
+  userId: uuid("user_id").references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Services Table
-export const services = mysqlTable("services", {
-  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+export const services = pgTable("services", {
+  id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
-  durationMin: int("duration_min").notNull(),
-  priceCents: int("price_cents").notNull(),
+  durationMin: integer("duration_min").notNull(),
+  priceCents: integer("price_cents").notNull(),
 });
 
 // Bookings Table
-export const bookings = mysqlTable("bookings", {
-  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+export const bookings = pgTable("bookings", {
+  id: uuid("id").primaryKey().defaultRandom(),
   date: date("date").notNull(),
-  startTime: int("start_time").notNull(),
-  endTime: int("end_time").notNull(),
-  hostessId: varchar("hostess_id", { length: 36 }).notNull().references(() => hostesses.id),
-  clientId: varchar("client_id", { length: 36 }).notNull().references(() => users.id),
-  serviceId: varchar("service_id", { length: 36 }).notNull().references(() => services.id),
-  status: mysqlEnum("status", ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELED']).notNull().default('PENDING'),
+  startTime: integer("start_time").notNull(),
+  endTime: integer("end_time").notNull(),
+  hostessId: uuid("hostess_id").notNull().references(() => hostesses.id),
+  clientId: uuid("client_id").notNull().references(() => users.id),
+  serviceId: uuid("service_id").notNull().references(() => services.id),
+  status: bookingStatusEnum("status").notNull().default('PENDING'),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
@@ -68,12 +74,12 @@ export const bookings = mysqlTable("bookings", {
 }));
 
 // Time Off Table
-export const timeOff = mysqlTable("time_off", {
-  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  hostessId: varchar("hostess_id", { length: 36 }).notNull().references(() => hostesses.id),
+export const timeOff = pgTable("time_off", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hostessId: uuid("hostess_id").notNull().references(() => hostesses.id),
   date: date("date").notNull(),
-  startTime: int("start_time").notNull(),
-  endTime: int("end_time").notNull(),
+  startTime: integer("start_time").notNull(),
+  endTime: integer("end_time").notNull(),
   reason: text("reason"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
@@ -81,25 +87,25 @@ export const timeOff = mysqlTable("time_off", {
 }));
 
 // Weekly Schedule Table
-export const weeklySchedule = mysqlTable("weekly_schedule", {
-  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  hostessId: varchar("hostess_id", { length: 36 }).notNull().references(() => hostesses.id),
-  weekday: int("weekday").notNull(),
-  startTime: int("start_time"),
-  endTime: int("end_time"),
+export const weeklySchedule = pgTable("weekly_schedule", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hostessId: uuid("hostess_id").notNull().references(() => hostesses.id),
+  weekday: integer("weekday").notNull(),
+  startTime: integer("start_time"),
+  endTime: integer("end_time"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   uniqueHostessWeekday: unique("unique_hostess_weekday").on(table.hostessId, table.weekday),
 }));
 
 // Audit Log Table
-export const auditLog = mysqlTable("audit_log", {
-  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  userId: varchar("user_id", { length: 36 }).references(() => users.id),
+export const auditLog = pgTable("audit_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id),
   action: text("action").notNull(),
   entity: text("entity").notNull(),
   entityId: text("entity_id").notNull(),
-  meta: json("meta"),
+  meta: jsonb("meta"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   createdAtIdx: index("audit_log_created_at_idx").on(table.createdAt),
@@ -107,13 +113,13 @@ export const auditLog = mysqlTable("audit_log", {
 }));
 
 // Photo Uploads Table
-export const photoUploads = mysqlTable("photo_uploads", {
-  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-  hostessId: varchar("hostess_id", { length: 36 }).notNull().references(() => hostesses.id),
+export const photoUploads = pgTable("photo_uploads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hostessId: uuid("hostess_id").notNull().references(() => hostesses.id),
   photoUrl: text("photo_url").notNull(),
-  status: mysqlEnum("status", ['PENDING', 'APPROVED', 'REJECTED']).notNull().default('PENDING'),
+  status: photoStatusEnum("status").notNull().default('PENDING'),
   uploadedAt: timestamp("uploaded_at").notNull().defaultNow(),
-  reviewedBy: varchar("reviewed_by", { length: 36 }).references(() => users.id),
+  reviewedBy: uuid("reviewed_by").references(() => users.id),
   reviewedAt: timestamp("reviewed_at"),
 }, (table) => ({
   hostessIdx: index("photo_uploads_hostess_idx").on(table.hostessId),
