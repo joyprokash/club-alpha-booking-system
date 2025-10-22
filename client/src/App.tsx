@@ -34,6 +34,8 @@ import AdminHostesses from "@/pages/admin-hostesses";
 import AdminHostessImport from "@/pages/admin-hostess-import";
 import AdminClientImport from "@/pages/admin-client-import";
 import AdminPhotoApprovals from "@/pages/admin-photo-approvals";
+import AdminUpcomingSchedule from "@/pages/admin-upcoming-schedule";
+import ClientUpcomingSchedule from "@/pages/client-upcoming-schedule";
 
 // Reception pages
 import ReceptionCalendar from "@/pages/reception-calendar";
@@ -198,6 +200,11 @@ function AppRouter() {
                     <AdminPhotoApprovals />
                   </ProtectedRoute>
                 </Route>
+                <Route path="/admin/upcoming-schedule">
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION"]}>
+                    <AdminUpcomingSchedule />
+                  </ProtectedRoute>
+                </Route>
 
                 {/* Reception routes */}
                 <Route path="/reception/calendar">
@@ -213,6 +220,11 @@ function AppRouter() {
                 <Route path="/hostess/:slug">
                   <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION", "CLIENT"]}>
                     <HostessProfile />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/upcoming-schedule">
+                  <ProtectedRoute allowedRoles={["ADMIN", "RECEPTION", "CLIENT"]}>
+                    <ClientUpcomingSchedule />
                   </ProtectedRoute>
                 </Route>
 
