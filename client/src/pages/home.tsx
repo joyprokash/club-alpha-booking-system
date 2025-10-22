@@ -138,9 +138,9 @@ export default function Home() {
           <h1 className="text-4xl font-bold mb-3">Welcome to Club Alpha Booking</h1>
           
           {/* Contact Information */}
-          <p className="text-lg font-medium mb-4">
-            Call: <a href="tel:613-508-1100" className="text-primary hover:underline">613-508-1100</a>
-          </p>
+          <a href="tel:613-508-1100" className="text-2xl font-semibold text-primary hover:underline mb-4 inline-block">
+            613-508-1100
+          </a>
         </div>
 
         <div className="max-w-md mx-auto mb-12">
