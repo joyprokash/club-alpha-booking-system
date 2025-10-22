@@ -104,7 +104,8 @@ function AppRouter() {
 
   const needsSidebar = user && (
     ["/admin", "/reception", "/staff"].some(path => location.startsWith(path)) ||
-    (user.role !== "CLIENT" && (location.startsWith("/hostesses") || location.startsWith("/hostess/")))
+    (user.role !== "CLIENT" && (location.startsWith("/hostesses") || location.startsWith("/hostess/"))) ||
+    location.startsWith("/upcoming-schedule")
   );
 
   // Show loading state if we're on a protected route and auth is still loading
