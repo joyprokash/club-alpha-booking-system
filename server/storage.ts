@@ -23,6 +23,18 @@ import type {
   UpcomingSchedule,
   InsertUpcomingSchedule,
   UpcomingScheduleWithDetails,
+  Conversation,
+  InsertConversation,
+  ConversationWithDetails,
+  Message,
+  InsertMessage,
+  MessageWithSender,
+  TriggerWord,
+  InsertTriggerWord,
+  TriggerWordWithDetails,
+  FlaggedConversation,
+  InsertFlaggedConversation,
+  FlaggedConversationWithDetails,
 } from "@shared/schema";
 import {
   users,
@@ -34,6 +46,10 @@ import {
   auditLog,
   photoUploads,
   upcomingSchedule,
+  conversations,
+  messages,
+  triggerWords,
+  flaggedConversations,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -105,6 +121,29 @@ export interface IStorage {
   deleteUpcomingSchedule(id: string): Promise<void>;
   clearUpcomingSchedule(): Promise<void>;
   getServices(): Promise<Service[]>;
+
+  // Hostess lookup by userId
+  getHostessByUserId(userId: string): Promise<Hostess | undefined>;
+
+  // Messaging operations
+  getConversations(userId: string): Promise<ConversationWithDetails[]>;
+  getConversationById(id: string): Promise<Conversation | undefined>;
+  getOrCreateConversation(clientId: string, hostessId: string): Promise<ConversationWithDetails>;
+  updateConversationLastMessage(id: string): Promise<void>;
+  
+  getMessages(conversationId: string): Promise<MessageWithSender[]>;
+  createMessage(data: InsertMessage): Promise<Message>;
+
+  // Trigger Words operations (admin)
+  getTriggerWords(): Promise<TriggerWord[]>;
+  getTriggerWordsWithDetails(): Promise<TriggerWordWithDetails[]>;
+  createTriggerWord(data: InsertTriggerWord): Promise<TriggerWord>;
+  deleteTriggerWord(id: string): Promise<void>;
+
+  // Flagged Conversations operations (admin)
+  getFlaggedConversations(reviewed?: boolean): Promise<FlaggedConversationWithDetails[]>;
+  createFlaggedConversation(data: InsertFlaggedConversation): Promise<FlaggedConversation>;
+  markFlaggedConversationAsReviewed(id: string, reviewerId: string): Promise<void>;
 }
 
 export class DbStorage implements IStorage {
@@ -592,6 +631,209 @@ export class DbStorage implements IStorage {
 
   async getServices(): Promise<Service[]> {
     return await db.select().from(services);
+  }
+
+  // Hostess lookup by userId
+  async getHostessByUserId(userId: string): Promise<Hostess | undefined> {
+    const result = await db
+      .select()
+      .from(hostesses)
+      .where(eq(hostesses.userId, userId))
+      .limit(1);
+    return result[0];
+  }
+
+  // Messaging operations
+  async getConversations(userId: string): Promise<ConversationWithDetails[]> {
+    // Get conversations where user is either the client or the hostess (via staff userId)
+    const staffHostess = await this.getHostessByUserId(userId);
+    
+    const results = await db
+      .select()
+      .from(conversations)
+      .leftJoin(users, eq(conversations.clientId, users.id))
+      .leftJoin(hostesses, eq(conversations.hostessId, hostesses.id))
+      .where(
+        staffHostess 
+          ? or(eq(conversations.clientId, userId), eq(conversations.hostessId, staffHostess.id))!
+          : eq(conversations.clientId, userId)
+      )
+      .orderBy(desc(conversations.lastMessageAt));
+
+    // Get last message for each conversation
+    const conversationsWithDetails: ConversationWithDetails[] = [];
+    
+    for (const row of results) {
+      const lastMessageResult = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.conversationId, row.conversations.id))
+        .orderBy(desc(messages.createdAt))
+        .limit(1);
+
+      conversationsWithDetails.push({
+        ...row.conversations,
+        client: row.users!,
+        hostess: row.hostesses!,
+        lastMessage: lastMessageResult[0] || undefined,
+      });
+    }
+
+    return conversationsWithDetails;
+  }
+
+  async getConversationById(id: string): Promise<Conversation | undefined> {
+    const result = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async getOrCreateConversation(clientId: string, hostessId: string): Promise<ConversationWithDetails> {
+    // Try to find existing conversation
+    const existingResults = await db
+      .select()
+      .from(conversations)
+      .leftJoin(users, eq(conversations.clientId, users.id))
+      .leftJoin(hostesses, eq(conversations.hostessId, hostesses.id))
+      .where(and(
+        eq(conversations.clientId, clientId),
+        eq(conversations.hostessId, hostessId)
+      ))
+      .limit(1);
+
+    if (existingResults.length > 0) {
+      const row = existingResults[0];
+      return {
+        ...row.conversations,
+        client: row.users!,
+        hostess: row.hostesses!,
+      };
+    }
+
+    // Create new conversation
+    const newConvResult = await db
+      .insert(conversations)
+      .values({ clientId, hostessId })
+      .returning();
+
+    const newConv = newConvResult[0];
+
+    // Fetch client and hostess data
+    const client = await this.getUserById(clientId);
+    const hostess = await this.getHostessById(hostessId);
+
+    return {
+      ...newConv,
+      client: client!,
+      hostess: hostess!,
+    };
+  }
+
+  async updateConversationLastMessage(id: string): Promise<void> {
+    await db
+      .update(conversations)
+      .set({ lastMessageAt: new Date() })
+      .where(eq(conversations.id, id));
+  }
+
+  async getMessages(conversationId: string): Promise<MessageWithSender[]> {
+    const results = await db
+      .select()
+      .from(messages)
+      .leftJoin(users, eq(messages.senderId, users.id))
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(asc(messages.createdAt));
+
+    return results.map(row => ({
+      ...row.messages,
+      sender: row.users!,
+    }));
+  }
+
+  async createMessage(data: InsertMessage): Promise<Message> {
+    const result = await db.insert(messages).values(data).returning();
+    return result[0];
+  }
+
+  // Trigger Words operations
+  async getTriggerWords(): Promise<TriggerWord[]> {
+    return await db.select().from(triggerWords).orderBy(triggerWords.word);
+  }
+
+  async getTriggerWordsWithDetails(): Promise<TriggerWordWithDetails[]> {
+    const results = await db
+      .select()
+      .from(triggerWords)
+      .leftJoin(users, eq(triggerWords.addedBy, users.id))
+      .orderBy(triggerWords.word);
+
+    return results.map(row => ({
+      ...row.trigger_words,
+      addedByUser: row.users!,
+    }));
+  }
+
+  async createTriggerWord(data: InsertTriggerWord): Promise<TriggerWord> {
+    const result = await db.insert(triggerWords).values(data).returning();
+    return result[0];
+  }
+
+  async deleteTriggerWord(id: string): Promise<void> {
+    await db.delete(triggerWords).where(eq(triggerWords.id, id));
+  }
+
+  // Flagged Conversations operations
+  async getFlaggedConversations(reviewed?: boolean): Promise<FlaggedConversationWithDetails[]> {
+    const conditions = reviewed !== undefined ? eq(flaggedConversations.reviewed, reviewed) : undefined;
+
+    const results = await db
+      .select()
+      .from(flaggedConversations)
+      .leftJoin(conversations, eq(flaggedConversations.conversationId, conversations.id))
+      .leftJoin(messages, eq(flaggedConversations.messageId, messages.id))
+      .leftJoin(users, eq(flaggedConversations.reviewedBy, users.id))
+      .where(conditions)
+      .orderBy(desc(flaggedConversations.flaggedAt));
+
+    // Enrich conversations with client and hostess data
+    const enriched: FlaggedConversationWithDetails[] = [];
+
+    for (const row of results) {
+      const client = await this.getUserById(row.conversations!.clientId);
+      const hostess = await this.getHostessById(row.conversations!.hostessId);
+
+      enriched.push({
+        ...row.flagged_conversations,
+        conversation: {
+          ...row.conversations!,
+          client: client!,
+          hostess: hostess!,
+        },
+        message: row.messages!,
+        reviewer: row.users || undefined,
+      });
+    }
+
+    return enriched;
+  }
+
+  async createFlaggedConversation(data: InsertFlaggedConversation): Promise<FlaggedConversation> {
+    const result = await db.insert(flaggedConversations).values(data).returning();
+    return result[0];
+  }
+
+  async markFlaggedConversationAsReviewed(id: string, reviewerId: string): Promise<void> {
+    await db
+      .update(flaggedConversations)
+      .set({ 
+        reviewed: true, 
+        reviewedBy: reviewerId, 
+        reviewedAt: new Date() 
+      })
+      .where(eq(flaggedConversations.id, id));
   }
 }
 

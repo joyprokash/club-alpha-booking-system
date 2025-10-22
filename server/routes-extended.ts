@@ -584,4 +584,232 @@ export function registerExtendedRoutes(app: Express) {
       next(error);
     }
   });
+
+  // ==================== MESSAGING ENDPOINTS ====================
+  
+  // Get conversations for current user (client or staff)
+  app.get("/api/conversations", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const userId = req.user!.id;
+      const conversations = await storage.getConversations(userId);
+      res.json(conversations);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get or create conversation between client and hostess
+  app.post("/api/conversations", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const { hostessId } = z.object({ hostessId: z.string() }).parse(req.body);
+      const userId = req.user!.id;
+      const userRole = req.user!.role;
+
+      let clientId: string;
+      let actualHostessId: string;
+
+      if (userRole === "CLIENT") {
+        clientId = userId;
+        actualHostessId = hostessId;
+      } else if (userRole === "STAFF") {
+        // Staff user messaging a client - hostessId is actually clientId
+        const staffHostess = await storage.getHostessByUserId(userId);
+        if (!staffHostess) {
+          return res.status(403).json({ error: "Staff user not linked to hostess" });
+        }
+        actualHostessId = staffHostess.id;
+        clientId = hostessId; // In this case, hostessId param is actually the client's ID
+      } else {
+        return res.status(403).json({ error: "Invalid role for messaging" });
+      }
+
+      const conversation = await storage.getOrCreateConversation(clientId, actualHostessId);
+      res.json(conversation);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get messages for a conversation
+  app.get("/api/conversations/:conversationId/messages", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const { conversationId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify user is part of this conversation
+      const conversation = await storage.getConversationById(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      // Check if user is the client or the staff user linked to the hostess
+      let isAuthorized = conversation.clientId === userId;
+      if (!isAuthorized && req.user!.role === "STAFF") {
+        const staffHostess = await storage.getHostessByUserId(userId);
+        if (staffHostess && staffHostess.id === conversation.hostessId) {
+          isAuthorized = true;
+        }
+      }
+
+      if (!isAuthorized && req.user!.role !== "ADMIN") {
+        return res.status(403).json({ error: "Not authorized to view this conversation" });
+      }
+
+      const messages = await storage.getMessages(conversationId);
+      res.json(messages);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Send a message
+  app.post("/api/messages", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const { conversationId, content } = z.object({
+        conversationId: z.string(),
+        content: z.string().min(1).max(5000),
+      }).parse(req.body);
+
+      const userId = req.user!.id;
+
+      // Verify user is part of this conversation
+      const conversation = await storage.getConversationById(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+
+      let isAuthorized = conversation.clientId === userId;
+      if (!isAuthorized && req.user!.role === "STAFF") {
+        const staffHostess = await storage.getHostessByUserId(userId);
+        if (staffHostess && staffHostess.id === conversation.hostessId) {
+          isAuthorized = true;
+        }
+      }
+
+      if (!isAuthorized) {
+        return res.status(403).json({ error: "Not authorized to send messages in this conversation" });
+      }
+
+      // Create message
+      const message = await storage.createMessage({
+        conversationId,
+        senderId: userId,
+        content,
+      });
+
+      // Update conversation last message timestamp
+      await storage.updateConversationLastMessage(conversationId);
+
+      // Check for trigger words
+      const triggerWords = await storage.getTriggerWords();
+      const contentLower = content.toLowerCase();
+      
+      for (const tw of triggerWords) {
+        if (contentLower.includes(tw.word.toLowerCase())) {
+          // Flag the conversation
+          await storage.createFlaggedConversation({
+            conversationId,
+            messageId: message.id,
+            triggeredWord: tw.word,
+          });
+          break; // Only flag once per message
+        }
+      }
+
+      res.json(message);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== ADMIN: TRIGGER WORDS MANAGEMENT ====================
+  
+  // Get all trigger words (admin only)
+  app.get("/api/admin/trigger-words", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const triggerWords = await storage.getTriggerWordsWithDetails();
+      res.json(triggerWords);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Add trigger word (admin only)
+  app.post("/api/admin/trigger-words", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { word } = z.object({ word: z.string().min(1).max(100) }).parse(req.body);
+      
+      const triggerWord = await storage.createTriggerWord({
+        word: word.toLowerCase().trim(),
+        addedBy: req.user!.id,
+      });
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entity: "trigger_word",
+        entityId: triggerWord.id,
+        meta: { word: triggerWord.word },
+      });
+
+      res.json(triggerWord);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Delete trigger word (admin only)
+  app.delete("/api/admin/trigger-words/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteTriggerWord(id);
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entity: "trigger_word",
+        entityId: id,
+        meta: {},
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ==================== ADMIN: FLAGGED CONVERSATIONS ====================
+  
+  // Get flagged conversations (admin only)
+  app.get("/api/admin/flagged-conversations", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { reviewed } = req.query;
+      const flaggedConversations = await storage.getFlaggedConversations(
+        reviewed === "true" ? true : reviewed === "false" ? false : undefined
+      );
+      res.json(flaggedConversations);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Mark flagged conversation as reviewed (admin only)
+  app.patch("/api/admin/flagged-conversations/:id/review", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      await storage.markFlaggedConversationAsReviewed(id, req.user!.id);
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entity: "flagged_conversation",
+        entityId: id,
+        meta: { reviewed: true },
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
 }
