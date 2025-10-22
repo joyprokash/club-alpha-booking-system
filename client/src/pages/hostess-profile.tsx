@@ -92,7 +92,7 @@ export default function HostessProfile() {
       queryClient.refetchQueries({ queryKey: ["/api/bookings/my"] });
       toast({
         title: "Booking created",
-        description: "Your appointment has been scheduled successfully",
+        description: "Your appointment has been scheduled successfully. You can message your hostess from My Bookings.",
       });
       setLocation("/bookings");
     },

@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Calendar, MapPin, Clock, MessageSquare, XCircle } from "lucide-react";
+import { Calendar, MapPin, Clock, MessageSquare, XCircle, Send } from "lucide-react";
 import { formatDate, formatTimeRange } from "@/lib/time-utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +16,7 @@ import type { BookingWithDetails } from "@shared/schema";
 
 export default function MyBookings() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [notesBookingId, setNotesBookingId] = useState<string | null>(null);
   const [notesText, setNotesText] = useState("");
   const [cancelBookingId, setCancelBookingId] = useState<string | null>(null);
@@ -85,6 +87,10 @@ export default function MyBookings() {
 
   const handleCancelBooking = (bookingId: string) => {
     setCancelBookingId(bookingId);
+  };
+
+  const handleMessageHostess = () => {
+    setLocation("/messages");
   };
 
   return (
@@ -173,6 +179,15 @@ export default function MyBookings() {
                       </div>
 
                       <div className="flex flex-col gap-2 ml-4">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={handleMessageHostess}
+                          data-testid={`button-message-${booking.id}`}
+                        >
+                          <Send className="h-4 w-4 mr-2" />
+                          Message
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
