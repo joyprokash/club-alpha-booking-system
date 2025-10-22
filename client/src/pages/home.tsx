@@ -139,7 +139,7 @@ export default function Home() {
           
           {/* Contact Information */}
           <p className="text-lg font-medium mb-4">
-            Call: 613-508-1100
+            Call: <a href="tel:613-508-1100" className="text-primary hover:underline">613-508-1100</a>
           </p>
         </div>
 
