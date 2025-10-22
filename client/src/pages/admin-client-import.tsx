@@ -109,7 +109,7 @@ sophia.taylor@example.io`;
     
     const failedRows = results.results.filter((r: any) => !r.success);
     const csvContent = 'email,error\n' + 
-      failedRows.map((r: any) => `${r.row.email},"${r.error}"`).join('\n');
+      failedRows.map((r: any) => `${r.email || r.row?.email || 'unknown'},"${r.error}"`).join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -170,9 +170,9 @@ sophia.taylor@example.io`;
                 <br />
                 • <strong>Example:</strong> john.smith@example.com → username: "john.smith"
                 <br />
-                • <strong>Passwords:</strong> Temporary passwords auto-generated
+                • <strong>Default Password:</strong> Set to their username (e.g., john.smith logs in with "john.smith" as password)
                 <br />
-                • <strong>First Login:</strong> All clients must set their own password when they first log in
+                • <strong>Password Change Required:</strong> All imported clients must change their password on first login
                 <br />
                 • <strong>Duplicates:</strong> Existing emails are automatically skipped (no duplicates created)
               </AlertDescription>
@@ -349,7 +349,7 @@ sophia.taylor@example.io`;
                       >
                         <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium">{result.row.email}</p>
+                          <p className="font-medium">{result.email || result.row?.email || 'Unknown'}</p>
                           <p className="text-sm text-muted-foreground">{result.error}</p>
                         </div>
                       </div>

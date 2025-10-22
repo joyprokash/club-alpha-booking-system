@@ -177,10 +177,6 @@ export function registerExtendedRoutes(app: Express) {
       
       const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true });
       const results: any[] = [];
-      
-      // Use a single password hash for all clients to save processing time
-      const tempPassword = Math.random().toString(36).slice(-12);
-      const passwordHash = await bcrypt.hash(tempPassword, 10);
 
       // Process in batches to avoid overwhelming the database
       const BATCH_SIZE = 100;
@@ -197,16 +193,19 @@ export function registerExtendedRoutes(app: Express) {
             const username = email?.split('@')[0]?.toLowerCase();
             
             if (!email || !email.includes("@") || !username) {
-              results.push({ row, success: false, error: "Invalid email" });
+              results.push({ row, success: false, error: "Invalid email", email });
               return;
             }
 
             // Check if exists
             const existing = await storage.getUserByEmail(email);
             if (existing) {
-              results.push({ row, success: false, error: "User already exists" });
+              results.push({ row, success: false, error: "User already exists", email });
               return;
             }
+
+            // Use username as default password and hash it for each user
+            const passwordHash = await bcrypt.hash(username, 10);
 
             await storage.createUser({
               username,
@@ -218,7 +217,7 @@ export function registerExtendedRoutes(app: Express) {
 
             results.push({ row, success: true, email });
           } catch (error: any) {
-            results.push({ row, success: false, error: error.message });
+            results.push({ row, success: false, error: error.message, email: row.email?.trim() || "unknown" });
           }
         }));
         
