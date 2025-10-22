@@ -126,6 +126,22 @@ export const photoUploads = pgTable("photo_uploads", {
   statusIdx: index("photo_uploads_status_idx").on(table.status),
 }));
 
+// Upcoming Schedule Table (Preview-only schedule for clients to view)
+export const upcomingSchedule = pgTable("upcoming_schedule", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: date("date").notNull(),
+  startTime: integer("start_time").notNull(), // minutes from midnight
+  endTime: integer("end_time").notNull(), // minutes from midnight
+  hostessId: varchar("hostess_id").notNull().references(() => hostesses.id),
+  serviceId: varchar("service_id").references(() => services.id), // Optional service indicator
+  notes: text("notes"), // Optional display note
+  uploadedBy: varchar("uploaded_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  hostessDateIdx: index("upcoming_schedule_hostess_date_idx").on(table.hostessId, table.date),
+  dateIdx: index("upcoming_schedule_date_idx").on(table.date),
+}));
+
 // Zod Schemas for Validation
 export const insertUserSchema = createInsertSchema(users, {
   username: z.string().min(1),
@@ -170,6 +186,12 @@ export const insertPhotoUploadSchema = createInsertSchema(photoUploads, {
   status: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
 }).omit({ id: true, uploadedAt: true, reviewedBy: true, reviewedAt: true });
 
+export const insertUpcomingScheduleSchema = createInsertSchema(upcomingSchedule, {
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  startTime: z.number().int().min(0).max(1439),
+  endTime: z.number().int().min(0).max(1439),
+}).omit({ id: true, createdAt: true });
+
 // TypeScript Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -195,6 +217,9 @@ export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type PhotoUpload = typeof photoUploads.$inferSelect;
 export type InsertPhotoUpload = z.infer<typeof insertPhotoUploadSchema>;
 
+export type UpcomingSchedule = typeof upcomingSchedule.$inferSelect;
+export type InsertUpcomingSchedule = z.infer<typeof insertUpcomingScheduleSchema>;
+
 // Additional types for API responses
 export type BookingWithDetails = Booking & {
   hostess: Hostess;
@@ -210,4 +235,10 @@ export type HostessWithSchedule = Hostess & {
 export type PhotoUploadWithDetails = PhotoUpload & {
   hostess: Hostess;
   reviewer?: User;
+};
+
+export type UpcomingScheduleWithDetails = UpcomingSchedule & {
+  hostess: Hostess;
+  service?: Service;
+  uploader: User;
 };
