@@ -130,6 +130,7 @@ export interface IStorage {
   getConversationById(id: string): Promise<Conversation | undefined>;
   getOrCreateConversation(clientId: string, hostessId: string): Promise<ConversationWithDetails>;
   updateConversationLastMessage(id: string): Promise<void>;
+  markConversationAsRead(conversationId: string, userId: string): Promise<void>;
   
   getMessages(conversationId: string): Promise<MessageWithSender[]>;
   createMessage(data: InsertMessage): Promise<Message>;
@@ -660,22 +661,52 @@ export class DbStorage implements IStorage {
       )
       .orderBy(desc(conversations.lastMessageAt));
 
-    // Get last message for each conversation
+    // Get last message and unread count for each conversation
     const conversationsWithDetails: ConversationWithDetails[] = [];
     
     for (const row of results) {
+      const conversation = row.conversations;
+      
+      // Get last message
       const lastMessageResult = await db
         .select()
         .from(messages)
-        .where(eq(messages.conversationId, row.conversations.id))
+        .where(eq(messages.conversationId, conversation.id))
         .orderBy(desc(messages.createdAt))
         .limit(1);
 
+      // Calculate unread count
+      const isClient = conversation.clientId === userId;
+      const lastReadAt = isClient ? conversation.clientLastReadAt : conversation.hostessLastReadAt;
+      
+      let unreadCount = 0;
+      if (lastReadAt) {
+        const unreadResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(messages)
+          .where(and(
+            eq(messages.conversationId, conversation.id),
+            sql`${messages.createdAt} > ${lastReadAt}`
+          ));
+        unreadCount = Number(unreadResult[0]?.count || 0);
+      } else {
+        // If never read, count all messages not sent by this user
+        const unreadResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(messages)
+          .where(and(
+            eq(messages.conversationId, conversation.id),
+            sql`${messages.senderId} != ${userId}`
+          ));
+        unreadCount = Number(unreadResult[0]?.count || 0);
+      }
+
       conversationsWithDetails.push({
-        ...row.conversations,
+        ...conversation,
         client: row.users!,
         hostess: row.hostesses!,
         lastMessage: lastMessageResult[0] || undefined,
+        unreadCount,
       });
     }
 
@@ -737,6 +768,24 @@ export class DbStorage implements IStorage {
       .update(conversations)
       .set({ lastMessageAt: new Date() })
       .where(eq(conversations.id, id));
+  }
+
+  async markConversationAsRead(conversationId: string, userId: string): Promise<void> {
+    // Check if user is the client or hostess (via staff userId)
+    const conversation = await this.getConversationById(conversationId);
+    if (!conversation) return;
+
+    const staffHostess = await this.getHostessByUserId(userId);
+    const isClient = conversation.clientId === userId;
+    const isHostess = staffHostess && conversation.hostessId === staffHostess.id;
+
+    if (!isClient && !isHostess) return;
+
+    // Update the appropriate lastReadAt timestamp
+    await db
+      .update(conversations)
+      .set(isClient ? { clientLastReadAt: new Date() } : { hostessLastReadAt: new Date() })
+      .where(eq(conversations.id, conversationId));
   }
 
   async getMessages(conversationId: string): Promise<MessageWithSender[]> {

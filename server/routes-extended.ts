@@ -630,6 +630,19 @@ export function registerExtendedRoutes(app: Express) {
     }
   });
 
+  // Mark conversation as read
+  app.post("/api/conversations/:conversationId/read", authenticateToken, async (req: AuthRequest, res, next) => {
+    try {
+      const { conversationId } = req.params;
+      const userId = req.user!.id;
+      
+      await storage.markConversationAsRead(conversationId, userId);
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Get messages for a conversation
   app.get("/api/conversations/:conversationId/messages", authenticateToken, async (req: AuthRequest, res, next) => {
     try {
