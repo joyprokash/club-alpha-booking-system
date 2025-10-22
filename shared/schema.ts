@@ -142,6 +142,56 @@ export const upcomingSchedule = pgTable("upcoming_schedule", {
   dateIdx: index("upcoming_schedule_date_idx").on(table.date),
 }));
 
+// Conversations Table (messaging between clients and hostesses)
+export const conversations = pgTable("conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  clientId: varchar("client_id").notNull().references(() => users.id),
+  hostessId: varchar("hostess_id").notNull().references(() => hostesses.id),
+  lastMessageAt: timestamp("last_message_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  clientIdx: index("conversations_client_idx").on(table.clientId),
+  hostessIdx: index("conversations_hostess_idx").on(table.hostessId),
+  uniqueClientHostess: unique("unique_client_hostess").on(table.clientId, table.hostessId),
+}));
+
+// Messages Table
+export const messages = pgTable("messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  conversationIdx: index("messages_conversation_idx").on(table.conversationId),
+  createdAtIdx: index("messages_created_at_idx").on(table.createdAt),
+}));
+
+// Trigger Words Table (admin-managed words for monitoring)
+export const triggerWords = pgTable("trigger_words", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  word: text("word").notNull().unique(),
+  addedBy: varchar("added_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  wordIdx: index("trigger_words_word_idx").on(table.word),
+}));
+
+// Flagged Conversations Table
+export const flaggedConversations = pgTable("flagged_conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  messageId: varchar("message_id").notNull().references(() => messages.id, { onDelete: 'cascade' }),
+  triggeredWord: text("triggered_word").notNull(),
+  reviewed: boolean("reviewed").notNull().default(false),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  flaggedAt: timestamp("flagged_at").notNull().defaultNow(),
+}, (table) => ({
+  conversationIdx: index("flagged_conversations_conversation_idx").on(table.conversationId),
+  reviewedIdx: index("flagged_conversations_reviewed_idx").on(table.reviewed),
+}));
+
 // Zod Schemas for Validation
 export const insertUserSchema = createInsertSchema(users, {
   username: z.string().min(1),
@@ -192,6 +242,28 @@ export const insertUpcomingScheduleSchema = createInsertSchema(upcomingSchedule,
   endTime: z.number().int().min(0).max(1439),
 }).omit({ id: true, createdAt: true });
 
+export const insertConversationSchema = createInsertSchema(conversations).omit({ 
+  id: true, 
+  createdAt: true, 
+  lastMessageAt: true 
+});
+
+export const insertMessageSchema = createInsertSchema(messages, {
+  content: z.string().min(1).max(5000),
+}).omit({ id: true, createdAt: true });
+
+export const insertTriggerWordSchema = createInsertSchema(triggerWords, {
+  word: z.string().min(1).max(100).toLowerCase(),
+}).omit({ id: true, createdAt: true });
+
+export const insertFlaggedConversationSchema = createInsertSchema(flaggedConversations).omit({ 
+  id: true, 
+  flaggedAt: true,
+  reviewed: true,
+  reviewedBy: true,
+  reviewedAt: true
+});
+
 // TypeScript Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -220,6 +292,18 @@ export type InsertPhotoUpload = z.infer<typeof insertPhotoUploadSchema>;
 export type UpcomingSchedule = typeof upcomingSchedule.$inferSelect;
 export type InsertUpcomingSchedule = z.infer<typeof insertUpcomingScheduleSchema>;
 
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export type TriggerWord = typeof triggerWords.$inferSelect;
+export type InsertTriggerWord = z.infer<typeof insertTriggerWordSchema>;
+
+export type FlaggedConversation = typeof flaggedConversations.$inferSelect;
+export type InsertFlaggedConversation = z.infer<typeof insertFlaggedConversationSchema>;
+
 // Additional types for API responses
 export type BookingWithDetails = Booking & {
   hostess: Hostess;
@@ -241,4 +325,25 @@ export type UpcomingScheduleWithDetails = UpcomingSchedule & {
   hostess: Hostess;
   service?: Service;
   uploader: User;
+};
+
+export type ConversationWithDetails = Conversation & {
+  client: User;
+  hostess: Hostess;
+  lastMessage?: Message;
+  unreadCount?: number;
+};
+
+export type MessageWithSender = Message & {
+  sender: User;
+};
+
+export type TriggerWordWithDetails = TriggerWord & {
+  addedByUser: User;
+};
+
+export type FlaggedConversationWithDetails = FlaggedConversation & {
+  conversation: ConversationWithDetails;
+  message: Message;
+  reviewer?: User;
 };
