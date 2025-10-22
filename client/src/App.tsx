@@ -108,7 +108,10 @@ function AppRouter() {
 
   const needsSidebar = user && (
     ["/admin", "/reception", "/staff"].some(path => location.startsWith(path)) ||
-    (user.role !== "CLIENT" && (location.startsWith("/hostesses") || location.startsWith("/hostess/"))) ||
+    location.startsWith("/hostesses") ||
+    location.startsWith("/hostess/") ||
+    location.startsWith("/bookings") ||
+    location.startsWith("/my-bookings") ||
     location.startsWith("/upcoming-schedule") ||
     location.startsWith("/messages")
   );
