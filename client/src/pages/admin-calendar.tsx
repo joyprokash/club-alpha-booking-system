@@ -289,8 +289,8 @@ export default function AdminCalendar() {
       <div className="flex-1 overflow-auto relative">
         <div className="inline-flex min-w-full">
           {/* Time Column */}
-          <div className="w-20 flex-shrink-0 border-r bg-card sticky left-0 z-30">
-            <div className={`${currentZoom.headerHeight} border-b bg-card sticky top-0 z-40`} />
+          <div className="w-20 flex-shrink-0 border-r bg-card sticky left-0 z-50 shadow-sm">
+            <div className={`${currentZoom.headerHeight} border-b bg-card sticky top-0 z-50`} />
             {timeSlots.map((slot) => (
               <div
                 key={slot}
