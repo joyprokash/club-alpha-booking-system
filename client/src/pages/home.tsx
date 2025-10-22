@@ -139,18 +139,8 @@ export default function Home() {
           
           {/* Contact Information */}
           <p className="text-lg font-medium mb-4">
-            Call: 613-508-1100, Text Message: 613-707-7773
+            Call: 613-508-1100
           </p>
-          
-          {/* First-time visitor notice */}
-          <div className="text-base text-muted-foreground max-w-2xl space-y-2">
-            <p>
-              <strong>Note:</strong> If you have not been to Club Alpha for a first time visit in person, you will not have access to the booking system. For a first time session, we recommend a walk in appointment where you can meet all the hostesses on staff and choose who you would like to see in session. Contact us for our address.
-            </p>
-            <p className="font-medium">
-              You will be granted access to the booking system after your first visit.
-            </p>
-          </div>
         </div>
 
         {/* Upcoming Schedule CTA */}
