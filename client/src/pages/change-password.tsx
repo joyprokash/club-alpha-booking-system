@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Footer } from "@/components/footer";
 import { Lock } from "lucide-react";
 
@@ -45,8 +45,12 @@ export default function ChangePassword() {
 
       toast({
         title: "Password changed successfully",
-        description: "You can now use your new password to log in",
+        description: "Your password has been updated",
       });
+
+      // Refresh auth data to clear forcePasswordReset flag
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
 
       // Redirect to home or dashboard
       setLocation("/");
