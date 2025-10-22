@@ -1,4 +1,4 @@
-import { Calendar, Users, Settings, LayoutDashboard, UserCog, Clock, FileUp, FileDown, LogOut, BarChart3, ImageIcon, UserCircle, CalendarClock } from "lucide-react";
+import { Calendar, Users, Settings, LayoutDashboard, UserCog, Clock, FileUp, FileDown, LogOut, BarChart3, ImageIcon, UserCircle, CalendarClock, MessageCircle, Shield, AlertTriangle } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   Sidebar,
@@ -77,6 +77,16 @@ export function AppSidebar() {
       icon: CalendarClock,
     },
     {
+      title: "Trigger Words",
+      url: "/admin/trigger-words",
+      icon: Shield,
+    },
+    {
+      title: "Flagged Conversations",
+      url: "/admin/flagged-conversations",
+      icon: AlertTriangle,
+    },
+    {
       title: "Import Schedule",
       url: "/admin/import",
       icon: FileUp,
@@ -147,6 +157,11 @@ export function AppSidebar() {
       url: "/staff/schedule",
       icon: Calendar,
     },
+    {
+      title: "Messages",
+      url: "/staff/messages",
+      icon: MessageCircle,
+    },
   ];
 
   const clientItems = [
@@ -159,6 +174,11 @@ export function AppSidebar() {
       title: "My Bookings",
       url: "/bookings",
       icon: Calendar,
+    },
+    {
+      title: "Messages",
+      url: "/messages",
+      icon: MessageCircle,
     },
     {
       title: "Upcoming Schedule",

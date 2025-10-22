@@ -20,6 +20,7 @@ import ChangePassword from "@/pages/change-password";
 import Hostesses from "@/pages/hostesses";
 import HostessProfile from "@/pages/hostess-profile";
 import MyBookings from "@/pages/my-bookings";
+import ClientMessages from "@/pages/client-messages";
 
 // Admin pages
 import AdminDashboard from "@/pages/admin-dashboard";
@@ -35,6 +36,8 @@ import AdminHostessImport from "@/pages/admin-hostess-import";
 import AdminClientImport from "@/pages/admin-client-import";
 import AdminPhotoApprovals from "@/pages/admin-photo-approvals";
 import AdminUpcomingSchedule from "@/pages/admin-upcoming-schedule";
+import AdminTriggerWords from "@/pages/admin-trigger-words";
+import AdminFlaggedConversations from "@/pages/admin-flagged-conversations";
 import ClientUpcomingSchedule from "@/pages/client-upcoming-schedule";
 
 // Reception pages
@@ -44,6 +47,7 @@ import ReceptionWeekly from "@/pages/reception-weekly";
 // Staff pages
 import StaffDashboard from "@/pages/staff-dashboard";
 import StaffSchedule from "@/pages/staff-schedule";
+import StaffMessages from "@/pages/staff-messages";
 
 // Shared
 import NotFound from "@/pages/not-found";
@@ -105,7 +109,8 @@ function AppRouter() {
   const needsSidebar = user && (
     ["/admin", "/reception", "/staff"].some(path => location.startsWith(path)) ||
     (user.role !== "CLIENT" && (location.startsWith("/hostesses") || location.startsWith("/hostess/"))) ||
-    location.startsWith("/upcoming-schedule")
+    location.startsWith("/upcoming-schedule") ||
+    location.startsWith("/messages")
   );
 
   // Show loading state if we're on a protected route and auth is still loading
@@ -206,6 +211,16 @@ function AppRouter() {
                     <AdminUpcomingSchedule />
                   </ProtectedRoute>
                 </Route>
+                <Route path="/admin/trigger-words">
+                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminTriggerWords />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/admin/flagged-conversations">
+                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminFlaggedConversations />
+                  </ProtectedRoute>
+                </Route>
 
                 {/* Reception routes */}
                 <Route path="/reception/calendar">
@@ -238,6 +253,18 @@ function AppRouter() {
                 <Route path="/staff/schedule">
                   <ProtectedRoute allowedRoles={["STAFF"]}>
                     <StaffSchedule />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/staff/messages">
+                  <ProtectedRoute allowedRoles={["STAFF"]}>
+                    <StaffMessages />
+                  </ProtectedRoute>
+                </Route>
+
+                {/* Client messaging route (in sidebar section) */}
+                <Route path="/messages">
+                  <ProtectedRoute allowedRoles={["CLIENT"]}>
+                    <ClientMessages />
                   </ProtectedRoute>
                 </Route>
 
