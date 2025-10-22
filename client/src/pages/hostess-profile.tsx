@@ -187,10 +187,16 @@ export default function HostessProfile() {
                     <h1 className="text-hostess-name font-semibold mb-2">
                       {hostess.displayName}
                     </h1>
-                    <Badge variant="outline" className="gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {hostess.location === "DOWNTOWN" ? "Downtown" : "West End"}
-                    </Badge>
+                    {hostess.locations && hostess.locations.length > 0 && (
+                      <div className="flex gap-1 flex-wrap justify-center">
+                        {hostess.locations.map((loc, idx) => (
+                          <Badge key={idx} variant="outline" className="gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {loc === "DOWNTOWN" ? "Downtown" : "West End"}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {hostess.bio && (

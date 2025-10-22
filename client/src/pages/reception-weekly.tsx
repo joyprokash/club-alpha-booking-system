@@ -291,9 +291,16 @@ export default function ReceptionWeekly() {
                         <span className={`${currentZoom.textSize} truncate max-w-[120px]`}>
                           {hostess.displayName}
                         </span>
-                        <Badge variant="outline" className={currentZoom.badgeHeight}>
-                          {hostess.location === "DOWNTOWN" ? "D" : "W"}
-                        </Badge>
+                        {hostess.locations && hostess.locations.length > 0 && (
+                          <div className="flex gap-0.5">
+                            {hostess.locations.includes("DOWNTOWN") && (
+                              <Badge variant="outline" className={`${currentZoom.badgeHeight} px-1`}>D</Badge>
+                            )}
+                            {hostess.locations.includes("WEST_END") && (
+                              <Badge variant="outline" className={`${currentZoom.badgeHeight} px-1`}>W</Badge>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

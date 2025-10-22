@@ -162,9 +162,16 @@ export function ClientDailyView({ locationFilter }: ClientDailyViewProps) {
                           {hostess.displayName}
                         </span>
                       </div>
-                      <Badge variant="outline" className="text-xs h-5">
-                        {hostess.location === "DOWNTOWN" ? "D" : "W"}
-                      </Badge>
+                      {hostess.locations && hostess.locations.length > 0 && (
+                        <div className="flex gap-0.5">
+                          {hostess.locations.includes("DOWNTOWN") && (
+                            <Badge variant="outline" className="text-xs h-5 px-1">D</Badge>
+                          )}
+                          {hostess.locations.includes("WEST_END") && (
+                            <Badge variant="outline" className="text-xs h-5 px-1">W</Badge>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Slots */}

@@ -143,10 +143,17 @@ export default function MyBookings() {
                               {formatTimeRange(booking.startTime, booking.endTime)}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
-                            {booking.hostess.location === "DOWNTOWN" ? "Downtown" : "West End"}
-                          </div>
+                          {booking.hostess.locations && booking.hostess.locations.length > 0 && (
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4" />
+                              {booking.hostess.locations.map((loc, idx) => (
+                                <span key={idx}>
+                                  {loc === "DOWNTOWN" ? "Downtown" : "West End"}
+                                  {idx < booking.hostess.locations.length - 1 && ", "}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         <div className="mt-3 p-3 bg-muted rounded-md">

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,7 @@ import type { Hostess } from "@shared/schema";
 const hostessSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/, "Only lowercase, numbers, and hyphens"),
   displayName: z.string().min(1),
-  location: z.enum(["DOWNTOWN", "WEST_END"]),
+  locations: z.array(z.enum(["DOWNTOWN", "WEST_END"])).min(1, "At least one location is required"),
   bio: z.string().optional(),
   specialties: z.string().optional(),
   email: z.string().email("Invalid email address"),
@@ -180,7 +181,7 @@ export default function AdminHostesses() {
     defaultValues: {
       slug: "",
       displayName: "",
-      location: "DOWNTOWN",
+      locations: ["DOWNTOWN"],
       bio: "",
       specialties: "",
       email: "",
@@ -249,21 +250,50 @@ export default function AdminHostesses() {
 
                   <FormField
                     control={form.control}
-                    name="location"
+                    name="locations"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Location</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-location">
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="DOWNTOWN">Downtown</SelectItem>
-                            <SelectItem value="WEST_END">West End</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Locations</FormLabel>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="location-downtown"
+                              checked={field.value?.includes("DOWNTOWN")}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                const current = field.value || [];
+                                field.onChange(
+                                  checked
+                                    ? [...current, "DOWNTOWN"]
+                                    : current.filter((l) => l !== "DOWNTOWN")
+                                );
+                              }}
+                              className="h-4 w-4"
+                              data-testid="checkbox-downtown"
+                            />
+                            <Label htmlFor="location-downtown">Downtown</Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="location-westend"
+                              checked={field.value?.includes("WEST_END")}
+                              onChange={(e) => {
+                                const checked = e.target.checked;
+                                const current = field.value || [];
+                                field.onChange(
+                                  checked
+                                    ? [...current, "WEST_END"]
+                                    : current.filter((l) => l !== "WEST_END")
+                                );
+                              }}
+                              className="h-4 w-4"
+                              data-testid="checkbox-westend"
+                            />
+                            <Label htmlFor="location-westend">West End</Label>
+                          </div>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -367,10 +397,16 @@ export default function AdminHostesses() {
                       </TableCell>
                       <TableCell className="font-medium">{hostess.displayName}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {hostess.location === "DOWNTOWN" ? "Downtown" : "West End"}
-                        </Badge>
+                        {hostess.locations && hostess.locations.length > 0 && (
+                          <div className="flex gap-1 flex-wrap">
+                            {hostess.locations.map((loc, idx) => (
+                              <Badge key={idx} variant="outline" className="gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {loc === "DOWNTOWN" ? "Downtown" : "West End"}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={hostess.active ? "default" : "secondary"}>

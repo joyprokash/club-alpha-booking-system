@@ -321,9 +321,16 @@ export default function AdminCalendar() {
                         {hostess.displayName}
                       </span>
                     </div>
-                    <Badge variant="outline" className={`${currentZoom.textSize} ${currentZoom.badgeHeight}`}>
-                      {hostess.location === "DOWNTOWN" ? "D" : "W"}
-                    </Badge>
+                    {hostess.locations && hostess.locations.length > 0 && (
+                      <div className="flex gap-0.5">
+                        {hostess.locations.includes("DOWNTOWN") && (
+                          <Badge variant="outline" className={`${currentZoom.textSize} ${currentZoom.badgeHeight} px-1`}>D</Badge>
+                        )}
+                        {hostess.locations.includes("WEST_END") && (
+                          <Badge variant="outline" className={`${currentZoom.textSize} ${currentZoom.badgeHeight} px-1`}>W</Badge>
+                        )}
+                      </div>
+                    )}
                     
                     {/* Resize Handle */}
                     <div
@@ -445,9 +452,16 @@ export default function AdminCalendar() {
                     <MapPin className="h-4 w-4" />
                     <span>Location</span>
                   </div>
-                  <div className="font-medium">
-                    {selectedBooking.hostess.location === "DOWNTOWN" ? "Downtown" : "West End"}
-                  </div>
+                  {selectedBooking.hostess.locations && selectedBooking.hostess.locations.length > 0 && (
+                    <div className="font-medium">
+                      {selectedBooking.hostess.locations.map((loc, idx) => (
+                        <span key={idx}>
+                          {loc === "DOWNTOWN" ? "Downtown" : "West End"}
+                          {idx < selectedBooking.hostess.locations.length - 1 && ", "}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

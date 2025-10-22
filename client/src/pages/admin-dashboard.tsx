@@ -29,8 +29,8 @@ export default function AdminDashboard() {
     queryKey: ["/api/bookings/upcoming"],
   });
 
-  const downtownCount = todaysBookings?.filter(b => b.hostess.location === "DOWNTOWN" && b.status !== "CANCELED").length || 0;
-  const westEndCount = todaysBookings?.filter(b => b.hostess.location === "WEST_END" && b.status !== "CANCELED").length || 0;
+  const downtownCount = todaysBookings?.filter(b => b.hostess.locations?.includes("DOWNTOWN") && b.status !== "CANCELED").length || 0;
+  const westEndCount = todaysBookings?.filter(b => b.hostess.locations?.includes("WEST_END") && b.status !== "CANCELED").length || 0;
 
   const quickActions = [
     { title: "Calendar View", icon: Calendar, href: "/admin/calendar" },
@@ -136,9 +136,15 @@ export default function AdminDashboard() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <p className="font-medium">{booking.hostess.displayName}</p>
-                        <Badge variant="outline">
-                          {booking.hostess.location === "DOWNTOWN" ? "Downtown" : "West End"}
-                        </Badge>
+                        {booking.hostess.locations && booking.hostess.locations.length > 0 && (
+                          <div className="flex gap-1">
+                            {booking.hostess.locations.map((loc, idx) => (
+                              <Badge key={idx} variant="outline">
+                                {loc === "DOWNTOWN" ? "Downtown" : "West End"}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                         <Badge
                           variant={
                             booking.status === "CONFIRMED" ? "default" :

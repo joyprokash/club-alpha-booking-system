@@ -121,9 +121,18 @@ export default function AdminPhotoApprovals() {
                             {upload.hostess.displayName}
                           </h3>
                           <div className="space-y-1 text-sm text-muted-foreground">
-                            <p data-testid={`text-location-${upload.id}`}>
-                              Location: <span className="text-foreground">{upload.hostess.location}</span>
-                            </p>
+                            {upload.hostess.locations && upload.hostess.locations.length > 0 && (
+                              <p data-testid={`text-location-${upload.id}`}>
+                                Location: <span className="text-foreground">
+                                  {upload.hostess.locations.map((loc, idx) => (
+                                    <span key={idx}>
+                                      {loc === "DOWNTOWN" ? "Downtown" : "West End"}
+                                      {idx < upload.hostess.locations.length - 1 && ", "}
+                                    </span>
+                                  ))}
+                                </span>
+                              </p>
+                            )}
                             <p data-testid={`text-uploaded-${upload.id}`}>
                               Uploaded: <span className="text-foreground">
                                 {formatDistanceToNow(new Date(upload.uploadedAt), { addSuffix: true })}
