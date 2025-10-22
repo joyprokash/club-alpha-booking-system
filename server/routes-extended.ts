@@ -454,4 +454,134 @@ export function registerExtendedRoutes(app: Express) {
       next(error);
     }
   });
+
+  // ==================== UPCOMING SCHEDULE ENDPOINTS ====================
+  
+  // Get upcoming schedule by date range
+  app.get("/api/upcoming-schedule", async (req, res, next) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const schedule = await storage.getUpcomingSchedule(
+        startDate as string, 
+        endDate as string
+      );
+      res.json(schedule);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Bulk upload upcoming schedule (admin/reception only)
+  app.post("/api/upcoming-schedule/bulk", importLimiter, authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req: AuthRequest, res, next) => {
+    try {
+      const { csvData } = z.object({ csvData: z.string() }).parse(req.body);
+      
+      const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true });
+      const results: any[] = [];
+
+      for (const row of parsed.data as any[]) {
+        try {
+          const { date, hostess, startTime, endTime, service, notes } = row;
+          
+          if (!date || !hostess || !startTime || !endTime) {
+            results.push({ row, success: false, error: "Missing required fields" });
+            continue;
+          }
+
+          // Find hostess by display name
+          const allHostesses = await storage.getHostesses();
+          const foundHostess = allHostesses.find(h => 
+            h.displayName.toLowerCase() === hostess.trim().toLowerCase()
+          );
+
+          if (!foundHostess) {
+            results.push({ row, success: false, error: `Hostess not found: ${hostess}` });
+            continue;
+          }
+
+          // Find service if provided
+          let serviceId = null;
+          if (service) {
+            const allServices = await storage.getServices();
+            const foundService = allServices.find(s => 
+              s.name.toLowerCase() === service.trim().toLowerCase()
+            );
+            serviceId = foundService?.id || null;
+          }
+
+          // Parse times
+          const start = parseTimeToMinutes(startTime.trim());
+          const end = parseTimeToMinutes(endTime.trim());
+
+          // Create schedule entry
+          await storage.createUpcomingSchedule({
+            date: date.trim(),
+            startTime: start,
+            endTime: end,
+            hostessId: foundHostess.id,
+            serviceId,
+            notes: notes?.trim() || null,
+            uploadedBy: req.user!.id,
+          });
+
+          results.push({ row, success: true, hostess: foundHostess.displayName });
+        } catch (error: any) {
+          results.push({ row, success: false, error: error.message });
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "IMPORT",
+        entity: "upcoming_schedule",
+        entityId: "bulk",
+        meta: { results },
+      });
+
+      res.json({ results, total: results.length });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Clear all upcoming schedule (admin/reception only)
+  app.delete("/api/upcoming-schedule/clear", authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req: AuthRequest, res, next) => {
+    try {
+      await storage.clearUpcomingSchedule();
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entity: "upcoming_schedule",
+        entityId: "all",
+        meta: {},
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Delete single upcoming schedule entry (admin/reception only)
+  app.delete("/api/upcoming-schedule/:id", authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteUpcomingSchedule(id);
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entity: "upcoming_schedule",
+        entityId: id,
+        meta: {},
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
 }

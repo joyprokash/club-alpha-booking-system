@@ -20,6 +20,9 @@ import type {
   PhotoUpload,
   InsertPhotoUpload,
   PhotoUploadWithDetails,
+  UpcomingSchedule,
+  InsertUpcomingSchedule,
+  UpcomingScheduleWithDetails,
 } from "@shared/schema";
 import {
   users,
@@ -30,6 +33,7 @@ import {
   weeklySchedule,
   auditLog,
   photoUploads,
+  upcomingSchedule,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -94,6 +98,13 @@ export interface IStorage {
   // Search operations
   getAllClients(): Promise<User[]>;
   searchClients(query: string): Promise<User[]>;
+
+  // Upcoming Schedule operations
+  getUpcomingSchedule(startDate: string, endDate: string): Promise<UpcomingScheduleWithDetails[]>;
+  createUpcomingSchedule(data: InsertUpcomingSchedule): Promise<UpcomingSchedule>;
+  deleteUpcomingSchedule(id: string): Promise<void>;
+  clearUpcomingSchedule(): Promise<void>;
+  getServices(): Promise<Service[]>;
 }
 
 export class DbStorage implements IStorage {
@@ -542,6 +553,45 @@ export class DbStorage implements IStorage {
       .from(users)
       .where(and(eq(users.role, 'CLIENT'), eq(users.email, query)))
       .limit(10);
+  }
+
+  // Upcoming Schedule operations
+  async getUpcomingSchedule(startDate: string, endDate: string): Promise<UpcomingScheduleWithDetails[]> {
+    const results = await db
+      .select()
+      .from(upcomingSchedule)
+      .leftJoin(hostesses, eq(upcomingSchedule.hostessId, hostesses.id))
+      .leftJoin(services, eq(upcomingSchedule.serviceId, services.id))
+      .leftJoin(users, eq(upcomingSchedule.uploadedBy, users.id))
+      .where(and(
+        gte(upcomingSchedule.date, startDate),
+        lte(upcomingSchedule.date, endDate)
+      ))
+      .orderBy(upcomingSchedule.date, upcomingSchedule.startTime);
+
+    return results.map(row => ({
+      ...row.upcoming_schedule!,
+      hostess: row.hostesses!,
+      service: row.services || undefined,
+      uploader: row.users!,
+    }));
+  }
+
+  async createUpcomingSchedule(data: InsertUpcomingSchedule): Promise<UpcomingSchedule> {
+    const result = await db.insert(upcomingSchedule).values(data).returning();
+    return result[0];
+  }
+
+  async deleteUpcomingSchedule(id: string): Promise<void> {
+    await db.delete(upcomingSchedule).where(eq(upcomingSchedule.id, id));
+  }
+
+  async clearUpcomingSchedule(): Promise<void> {
+    await db.delete(upcomingSchedule);
+  }
+
+  async getServices(): Promise<Service[]> {
+    return await db.select().from(services);
   }
 }
 
