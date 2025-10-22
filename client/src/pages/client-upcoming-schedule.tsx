@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Phone, Info, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, Phone, Info, ChevronLeft, ChevronRight, AlertCircle, MapPin } from "lucide-react";
 import { format, addDays, startOfWeek, endOfWeek } from "date-fns";
 import type { UpcomingScheduleWithDetails } from "@shared/schema";
 
@@ -24,6 +25,7 @@ function formatTimeRange(startMin: number, endMin: number): string {
 
 export default function ClientUpcomingSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
   const { data: scheduleData = [], isLoading, error } = useQuery<UpcomingScheduleWithDetails[]>({
@@ -35,11 +37,16 @@ export default function ClientUpcomingSchedule() {
     },
   });
 
-  // Get unique hostesses for this day
+  // Filter schedule by location
+  const filteredScheduleData = selectedLocation === "all" 
+    ? scheduleData 
+    : scheduleData.filter(s => s.hostess.locations?.includes(selectedLocation));
+
+  // Get unique hostesses for this day (filtered by location)
   const hostesses = Array.from(
-    new Set(scheduleData.map(s => s.hostessId))
+    new Set(filteredScheduleData.map(s => s.hostessId))
   ).map(id => {
-    const schedule = scheduleData.find(s => s.hostessId === id);
+    const schedule = filteredScheduleData.find(s => s.hostessId === id);
     return schedule?.hostess;
   }).filter(Boolean);
 
@@ -63,7 +70,7 @@ export default function ClientUpcomingSchedule() {
 
   // Get schedule for a specific hostess and time
   const getScheduleAtTime = (hostessId: string, time: number) => {
-    return scheduleData.find(
+    return filteredScheduleData.find(
       s => s.hostessId === hostessId && time >= s.startTime && time < s.endTime
     );
   };
@@ -88,6 +95,38 @@ export default function ClientUpcomingSchedule() {
           Please call Club Alpha to reserve your preferred time slot.
         </AlertDescription>
       </Alert>
+
+      {/* Location Filter */}
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4">
+            <MapPin className="h-5 w-5 text-muted-foreground" />
+            <div className="flex gap-2">
+              <Button
+                variant={selectedLocation === "all" ? "default" : "outline"}
+                onClick={() => setSelectedLocation("all")}
+                data-testid="button-location-all"
+              >
+                All Locations
+              </Button>
+              <Button
+                variant={selectedLocation === "DOWNTOWN" ? "default" : "outline"}
+                onClick={() => setSelectedLocation("DOWNTOWN")}
+                data-testid="button-location-downtown"
+              >
+                Downtown
+              </Button>
+              <Button
+                variant={selectedLocation === "WEST_END" ? "default" : "outline"}
+                onClick={() => setSelectedLocation("WEST_END")}
+                data-testid="button-location-westend"
+              >
+                West End
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Date Navigation */}
       <Card className="mb-6">
