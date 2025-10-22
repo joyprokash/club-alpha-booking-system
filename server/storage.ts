@@ -686,7 +686,7 @@ export class DbStorage implements IStorage {
           .from(messages)
           .where(and(
             eq(messages.conversationId, conversation.id),
-            sql`${messages.createdAt} > ${lastReadAt}`
+            gte(messages.createdAt, lastReadAt)
           ));
         unreadCount = Number(unreadResult[0]?.count || 0);
       } else {
@@ -781,10 +781,10 @@ export class DbStorage implements IStorage {
 
     if (!isClient && !isHostess) return;
 
-    // Update the appropriate lastReadAt timestamp
+    // Update the appropriate lastReadAt timestamp using SQL NOW() to avoid Date serialization issues
     await db
       .update(conversations)
-      .set(isClient ? { clientLastReadAt: new Date() } : { hostessLastReadAt: new Date() })
+      .set(isClient ? { clientLastReadAt: sql`NOW()` } : { hostessLastReadAt: sql`NOW()` })
       .where(eq(conversations.id, conversationId));
   }
 
