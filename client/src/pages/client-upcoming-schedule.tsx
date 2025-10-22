@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Phone, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Phone, Info, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { format, addDays, startOfWeek, endOfWeek } from "date-fns";
 import type { UpcomingScheduleWithDetails } from "@shared/schema";
 
@@ -26,7 +26,7 @@ export default function ClientUpcomingSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-  const { data: scheduleData = [], isLoading } = useQuery<UpcomingScheduleWithDetails[]>({
+  const { data: scheduleData = [], isLoading, error } = useQuery<UpcomingScheduleWithDetails[]>({
     queryKey: ["/api/upcoming-schedule", dateStr],
     queryFn: async () => {
       const response = await fetch(`/api/upcoming-schedule?startDate=${dateStr}&endDate=${dateStr}`);
@@ -133,7 +133,14 @@ export default function ClientUpcomingSchedule() {
       </Card>
 
       {/* Schedule Grid */}
-      {isLoading ? (
+      {error ? (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load upcoming schedule. Please try again later or contact support if the problem persists.
+          </AlertDescription>
+        </Alert>
+      ) : isLoading ? (
         <Card>
           <CardContent className="p-8 text-center">
             <p className="text-muted-foreground">Loading schedule...</p>
