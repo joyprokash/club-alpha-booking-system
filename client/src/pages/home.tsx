@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Footer } from "@/components/footer";
-import { User, Calendar, Lock, Users, Copy, Check, Eye, EyeOff } from "lucide-react";
+import { User, Calendar, Lock, Users, Copy, Check, Eye, EyeOff, CalendarClock } from "lucide-react";
 import logoUrl from "@assets/club-alpha-badge (1)_1760718368973.png";
 
 const loginSchema = z.object({
@@ -152,6 +152,35 @@ export default function Home() {
             </p>
           </div>
         </div>
+
+        {/* Upcoming Schedule CTA */}
+        <Card className="max-w-2xl mx-auto mb-12 bg-primary/5 border-primary/20">
+          <CardContent className="pt-6 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="p-4 rounded-full bg-primary/10">
+                <CalendarClock className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold mb-2">Check Our Upcoming Schedule</h2>
+                <p className="text-muted-foreground mb-4">
+                  View our available time slots for the upcoming week
+                </p>
+              </div>
+              <Button
+                size="lg"
+                onClick={() => setLocation("/upcoming-schedule")}
+                data-testid="button-view-upcoming-schedule"
+                className="gap-2"
+              >
+                <CalendarClock className="h-5 w-5" />
+                View Upcoming Schedule
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Please call us to book your appointment
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="max-w-md mx-auto mb-12">
           <Card>
