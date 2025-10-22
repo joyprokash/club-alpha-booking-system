@@ -280,6 +280,9 @@ function AppRouter() {
           <MyBookings />
         </ProtectedRoute>
       </Route>
+      
+      {/* Public upcoming schedule - no authentication required */}
+      <Route path="/upcoming-schedule" component={ClientUpcomingSchedule} />
 
       {/* Default route - show homepage for unauthenticated, redirect for authenticated */}
       <Route path="/">
