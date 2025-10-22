@@ -33,25 +33,11 @@ export default function AdminFlaggedConversations() {
 
   // Fetch flagged conversations
   const { data: unreviewedFlags = [], isLoading: isLoadingUnreviewed } = useQuery<FlaggedConversationWithDetails[]>({
-    queryKey: ["/api/admin/flagged-conversations", "unreviewed"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/flagged-conversations?reviewed=false", {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to fetch flagged conversations");
-      return res.json();
-    },
+    queryKey: ["/api/admin/flagged-conversations?reviewed=false"],
   });
 
   const { data: reviewedFlags = [], isLoading: isLoadingReviewed } = useQuery<FlaggedConversationWithDetails[]>({
-    queryKey: ["/api/admin/flagged-conversations", "reviewed"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/flagged-conversations?reviewed=true", {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to fetch flagged conversations");
-      return res.json();
-    },
+    queryKey: ["/api/admin/flagged-conversations?reviewed=true"],
   });
 
   // Fetch messages for selected conversation
@@ -63,13 +49,11 @@ export default function AdminFlaggedConversations() {
   // Mark as reviewed mutation
   const markAsReviewedMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/admin/flagged-conversations/${id}/review`, {
-        method: "PATCH",
-      });
+      return apiRequest("PATCH", `/api/admin/flagged-conversations/${id}/review`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/flagged-conversations", "unreviewed"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/flagged-conversations", "reviewed"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/flagged-conversations?reviewed=false"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/flagged-conversations?reviewed=true"] });
       setSelectedFlagged(null);
       toast({
         title: "Success",

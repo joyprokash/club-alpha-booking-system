@@ -41,11 +41,7 @@ export default function AdminTriggerWords() {
   // Add trigger word mutation
   const addWordMutation = useMutation({
     mutationFn: async (word: string) => {
-      return apiRequest(`/api/admin/trigger-words`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ word }),
-      });
+      return apiRequest("POST", "/api/admin/trigger-words", { word });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/trigger-words"] });
@@ -67,9 +63,7 @@ export default function AdminTriggerWords() {
   // Delete trigger word mutation
   const deleteWordMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/admin/trigger-words/${id}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/admin/trigger-words/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/trigger-words"] });

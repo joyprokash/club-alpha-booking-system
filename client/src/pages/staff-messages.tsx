@@ -32,13 +32,9 @@ export default function StaffMessages() {
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!selectedConversation) return;
-      return apiRequest(`/api/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationId: selectedConversation.id,
-          content,
-        }),
+      return apiRequest("POST", "/api/messages", {
+        conversationId: selectedConversation.id,
+        content,
       });
     },
     onSuccess: () => {

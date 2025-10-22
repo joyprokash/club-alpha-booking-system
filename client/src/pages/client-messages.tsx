@@ -38,13 +38,9 @@ export default function ClientMessages() {
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!selectedConversation) return;
-      return apiRequest(`/api/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationId: selectedConversation.id,
-          content,
-        }),
+      return apiRequest("POST", "/api/messages", {
+        conversationId: selectedConversation.id,
+        content,
       });
     },
     onSuccess: () => {
@@ -64,11 +60,7 @@ export default function ClientMessages() {
   // Start new conversation mutation
   const startConversationMutation = useMutation({
     mutationFn: async (hostessId: string) => {
-      return apiRequest(`/api/conversations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostessId }),
-      });
+      return apiRequest("POST", "/api/conversations", { hostessId });
     },
     onSuccess: (data: ConversationWithDetails) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
@@ -222,14 +214,14 @@ export default function ClientMessages() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <Avatar className="h-10 w-10">
-                <AvatarImage src={selectedConversation.hostess.photoUrl || undefined} />
+                <AvatarImage src={selectedConversation?.hostess?.photoUrl || undefined} />
                 <AvatarFallback>
-                  {selectedConversation.hostess.displayName.split(' ').map(n => n[0]).join('')}
+                  {selectedConversation?.hostess?.displayName?.split(' ').map(n => n[0]).join('') || 'H'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="font-semibold">{selectedConversation.hostess.displayName}</h2>
-                {selectedConversation.hostess.locations && selectedConversation.hostess.locations.length > 0 && (
+                <h2 className="font-semibold">{selectedConversation?.hostess?.displayName || 'Hostess'}</h2>
+                {selectedConversation?.hostess?.locations && selectedConversation.hostess.locations.length > 0 && (
                   <div className="flex gap-1 mt-0.5">
                     {selectedConversation.hostess.locations.includes("DOWNTOWN") && (
                       <Badge variant="outline" className="text-xs">Downtown</Badge>
