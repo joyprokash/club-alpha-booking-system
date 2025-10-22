@@ -205,49 +205,6 @@ export default function AdminAnalytics() {
         </CardContent>
       </Card>
 
-      {/* Booking Status Distribution */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Booking Status Distribution</CardTitle>
-          <CardDescription>Overview of all booking statuses</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {cancellationLoading ? (
-            <div className="h-[400px] flex items-center justify-center">
-              <p className="text-muted-foreground">Loading chart...</p>
-            </div>
-          ) : cancellationData ? (
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: 'Confirmed', value: cancellationData.confirmed },
-                    { name: 'Cancelled', value: cancellationData.cancelled },
-                    { name: 'Pending', value: cancellationData.pending },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={120}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {[
-                    { name: 'Confirmed', value: cancellationData.confirmed },
-                    { name: 'Cancelled', value: cancellationData.cancelled },
-                    { name: 'Pending', value: cancellationData.pending },
-                  ].map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : null}
-        </CardContent>
-      </Card>
     </div>
   );
 }
