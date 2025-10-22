@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, eachDayOfInterval, addDays } from "date-fns";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, MapPin, Clock, User, Mail, FileText, Calendar as CalendarIcon, ZoomIn, ZoomOut, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Clock, User, Mail, FileText, Calendar as CalendarIcon, ZoomIn, ZoomOut, LayoutGrid, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { QuickBookingForm } from "@/components/quick-booking-form";
@@ -17,11 +17,13 @@ import { generateTimeSlots, minutesToTime, formatTimeRange, GRID_START_TIME, GRI
 import type { Hostess, BookingWithDetails } from "@shared/schema";
 
 type ZoomLevel = "compact" | "normal" | "comfortable";
+type ViewMode = "daily" | "weekly";
 
 export default function AdminCalendar() {
   const [, setLocation] = useLocation();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [locationFilter, setLocationFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("daily");
   const [quickBookingOpen, setQuickBookingOpen] = useState(false);
   const [editBookingOpen, setEditBookingOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<ZoomLevel>("compact");
@@ -35,6 +37,11 @@ export default function AdminCalendar() {
   const [selectedBooking, setSelectedBooking] = useState<BookingWithDetails | null>(null);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 0 });
+  const weekStartStr = format(weekStart, "yyyy-MM-dd");
+  const weekEndStr = format(weekEnd, "yyyy-MM-dd");
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const { data: hostesses } = useQuery<Hostess[]>({
     queryKey: locationFilter === "all"
@@ -42,10 +49,41 @@ export default function AdminCalendar() {
       : ["/api/hostesses?location=" + locationFilter],
   });
 
-  const { data: bookings } = useQuery<BookingWithDetails[]>({
+  // Daily bookings query
+  const { data: bookings, isLoading: isLoadingDaily } = useQuery<BookingWithDetails[]>({
     queryKey: locationFilter === "all"
       ? [`/api/bookings/day?date=${dateStr}`]
       : [`/api/bookings/day?date=${dateStr}&location=${locationFilter}`],
+    enabled: viewMode === "daily",
+  });
+
+  // Weekly bookings query
+  const { data: weeklyBookings, isLoading: isLoadingWeekly } = useQuery<BookingWithDetails[]>({
+    queryKey: ['/api/bookings/range', weekStartStr, weekEndStr, locationFilter],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        startDate: weekStartStr,
+        endDate: weekEndStr,
+      });
+      if (locationFilter !== "all") {
+        params.append("location", locationFilter);
+      }
+      
+      const token = localStorage.getItem("auth_token");
+      const headers: Record<string, string> = {};
+      
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/bookings/range?${params}`, {
+        headers,
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch bookings");
+      return response.json();
+    },
+    enabled: viewMode === "weekly",
   });
 
   const sortedHostesses = hostesses?.slice().sort((a, b) => 
@@ -88,6 +126,30 @@ export default function AdminCalendar() {
     return bookings?.find(
       (b) => b.hostessId === hostessId && b.startTime <= startTime && b.endTime > startTime
     );
+  };
+
+  // Get bookings for a specific hostess and day (weekly view)
+  const getBookingsForDay = (hostessId: string, date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return weeklyBookings?.filter(
+      b => b.hostessId === hostessId && b.date === dateStr
+    ) || [];
+  };
+
+  const goToPreviousWeek = () => {
+    setSelectedDate(prev => addWeeks(prev, -1));
+  };
+
+  const goToNextWeek = () => {
+    setSelectedDate(prev => addWeeks(prev, 1));
+  };
+
+  const goToPreviousDay = () => {
+    setSelectedDate(prev => addDays(prev, -1));
+  };
+
+  const goToNextDay = () => {
+    setSelectedDate(prev => addDays(prev, 1));
   };
 
   const { toast } = useToast();
@@ -171,31 +233,28 @@ export default function AdminCalendar() {
       {/* Header */}
       <div className="border-b p-4 flex items-center justify-between bg-card">
         <div className="flex items-center gap-4">
-          <h1 className="text-section-title font-semibold">Daily Calendar</h1>
+          <h1 className="text-section-title font-semibold">
+            {viewMode === "daily" ? "Daily Calendar" : "Weekly Calendar"}
+          </h1>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {
-                const newDate = new Date(selectedDate);
-                newDate.setDate(newDate.getDate() - 1);
-                setSelectedDate(newDate);
-              }}
+              onClick={viewMode === "daily" ? goToPreviousDay : goToPreviousWeek}
               data-testid="button-calendar-prev"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm min-w-32 text-center">
-              {format(selectedDate, "MMM d, yyyy")}
+              {viewMode === "daily" 
+                ? format(selectedDate, "MMM d, yyyy")
+                : `${format(weekStart, "MMM d")} - ${format(weekEnd, "MMM d, yyyy")}`
+              }
             </span>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => {
-                const newDate = new Date(selectedDate);
-                newDate.setDate(newDate.getDate() + 1);
-                setSelectedDate(newDate);
-              }}
+              onClick={viewMode === "daily" ? goToNextDay : goToNextWeek}
               data-testid="button-calendar-next"
             >
               <ChevronRight className="h-4 w-4" />
@@ -231,16 +290,29 @@ export default function AdminCalendar() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Weekly View Button */}
-          <Button
-            variant="outline"
-            onClick={() => setLocation("/admin/weekly")}
-            className="gap-2"
-            data-testid="button-weekly-view"
-          >
-            <LayoutGrid className="h-4 w-4" />
-            Weekly View
-          </Button>
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-1 border rounded-md p-1">
+            <Button
+              variant={viewMode === "daily" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("daily")}
+              data-testid="button-view-daily"
+              className="h-7"
+            >
+              <CalendarIcon className="h-3.5 w-3.5 mr-1" />
+              Daily
+            </Button>
+            <Button
+              variant={viewMode === "weekly" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("weekly")}
+              data-testid="button-view-weekly"
+              className="h-7"
+            >
+              <CalendarDays className="h-3.5 w-3.5 mr-1" />
+              Weekly
+            </Button>
+          </div>
 
           <div className="flex items-center gap-1 border rounded-md p-1">
             <Button
@@ -286,23 +358,24 @@ export default function AdminCalendar() {
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-auto relative">
-        <div className="inline-flex min-w-full">
-          {/* Time Column */}
-          <div className="w-20 flex-shrink-0 border-r bg-card sticky left-0 z-50 shadow-sm">
-            <div className={`${currentZoom.headerHeight} border-b bg-card sticky top-0 z-50`} />
-            {timeSlots.map((slot) => (
-              <div
-                key={slot}
-                className={`${currentZoom.rowHeight} border-b flex items-center justify-center text-time-label text-muted-foreground ${currentZoom.textSize}`}
-              >
-                {formatTimeRange(slot, slot + SLOT_DURATION)}
-              </div>
-            ))}
-          </div>
+      {viewMode === "daily" ? (
+        <div className="flex-1 overflow-auto relative">
+          <div className="inline-flex min-w-full">
+            {/* Time Column */}
+            <div className="w-20 flex-shrink-0 border-r bg-card sticky left-0 z-50 shadow-sm">
+              <div className={`${currentZoom.headerHeight} border-b bg-card sticky top-0 z-50`} />
+              {timeSlots.map((slot) => (
+                <div
+                  key={slot}
+                  className={`${currentZoom.rowHeight} border-b flex items-center justify-center text-time-label text-muted-foreground ${currentZoom.textSize}`}
+                >
+                  {formatTimeRange(slot, slot + SLOT_DURATION)}
+                </div>
+              ))}
+            </div>
 
-          {/* Hostess Columns */}
-          {sortedHostesses.map((hostess) => (
+            {/* Hostess Columns */}
+            {sortedHostesses.map((hostess) => (
                 <div 
                   key={hostess.id} 
                   className="border-r flex-shrink-0 relative"
@@ -374,8 +447,124 @@ export default function AdminCalendar() {
                   })}
                 </div>
               ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        // WEEKLY VIEW
+        <div className="flex-1 overflow-auto p-4">
+          {isLoadingWeekly ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground">Loading weekly schedule...</p>
+            </div>
+          ) : sortedHostesses.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground">No hostesses available</p>
+            </div>
+          ) : (
+            <div className="overflow-auto border rounded-lg bg-card">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b bg-card">
+                    <th className="p-3 text-left font-semibold min-w-[150px] sticky left-0 z-20 bg-card border-r">
+                      Hostess
+                    </th>
+                    {weekDays.map((day) => (
+                      <th key={day.toISOString()} className="p-3 text-center font-semibold min-w-[140px] border-r">
+                        <div className="text-sm">
+                          {format(day, "EEE")}
+                        </div>
+                        <div className="text-xs text-muted-foreground font-normal">
+                          {format(day, "MMM d")}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedHostesses.map((hostess) => (
+                    <tr key={hostess.id} className="border-b hover-elevate">
+                      <td className="p-3 sticky left-0 z-10 bg-card border-r">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={hostess.photoUrl || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {hostess.displayName.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">
+                              {hostess.displayName}
+                            </div>
+                            {hostess.locations && hostess.locations.length > 0 && (
+                              <div className="flex gap-1 mt-0.5">
+                                {hostess.locations.includes("DOWNTOWN") && (
+                                  <Badge variant="outline" className="text-xs h-4 px-1">D</Badge>
+                                )}
+                                {hostess.locations.includes("WEST_END") && (
+                                  <Badge variant="outline" className="text-xs h-4 px-1">W</Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      {weekDays.map((day) => {
+                        const dayBookings = getBookingsForDay(hostess.id, day);
+                        return (
+                          <td key={day.toISOString()} className="p-2 border-r align-top">
+                            {dayBookings.length > 0 ? (
+                              <div className="space-y-1">
+                                {dayBookings.map((booking) => (
+                                  <div
+                                    key={booking.id}
+                                    className={`rounded p-1.5 text-xs cursor-pointer transition-colors ${
+                                      booking.status === "CANCELED" 
+                                        ? "bg-muted border border-muted-foreground/20" 
+                                        : booking.notes && booking.notes.trim()
+                                        ? "bg-notes/20 border border-notes/30"
+                                        : "bg-booked/20 border border-booked/30"
+                                    }`}
+                                    onClick={() => {
+                                      setSelectedBooking(booking);
+                                      setEditBookingOpen(true);
+                                    }}
+                                    data-testid={`booking-${hostess.id}-${format(day, "yyyy-MM-dd")}-${booking.id}`}
+                                  >
+                                    <div className="font-semibold">
+                                      {formatTimeRange(booking.startTime, booking.endTime)}
+                                    </div>
+                                    {booking.client && (
+                                      <div className="text-muted-foreground mt-0.5 truncate">
+                                        {booking.client.email.split('@')[0]}
+                                      </div>
+                                    )}
+                                    {booking.service && (
+                                      <div className="font-medium mt-0.5 truncate">
+                                        {booking.service.name}
+                                      </div>
+                                    )}
+                                    {booking.status === "CANCELED" && (
+                                      <Badge variant="outline" className="text-xs mt-0.5">Canceled</Badge>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-muted-foreground text-center py-2">
+                                -
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Quick Booking Modal */}
       <Dialog open={quickBookingOpen} onOpenChange={setQuickBookingOpen}>
