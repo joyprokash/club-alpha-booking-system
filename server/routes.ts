@@ -981,12 +981,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(Object.values(revenueByHostess));
       } else if (groupBy === "location") {
         const revenueByLocation = filteredBookings.reduce((acc, booking) => {
-          const location = booking.hostess.location;
-          if (!acc[location]) {
-            acc[location] = { name: location, revenue: 0, bookings: 0 };
-          }
-          acc[location].revenue += booking.service.priceCents;
-          acc[location].bookings += 1;
+          // Handle multiple locations - split revenue across all locations
+          const locations = booking.hostess.locations || [];
+          locations.forEach(location => {
+            if (!acc[location]) {
+              acc[location] = { name: location, revenue: 0, bookings: 0 };
+            }
+            // Split revenue proportionally across locations
+            acc[location].revenue += booking.service.priceCents / locations.length;
+            acc[location].bookings += 1 / locations.length;
+          });
           return acc;
         }, {} as Record<string, { name: string; revenue: number; bookings: number }>);
 

@@ -72,29 +72,31 @@ async function seed() {
     // 5. Create Hostesses (10 Downtown, 10 West End)
     console.log("\n👯 Creating hostesses...");
     const hostessData = [
-      // Downtown
-      { slug: "sophia-downtown", displayName: "Sophia", bio: "Experienced and attentive, specializing in personalized care.", specialties: ["Relaxation", "Deep Tissue", "Aromatherapy"], location: "DOWNTOWN" as const },
-      { slug: "emily-downtown", displayName: "Emily", bio: "Warm and welcoming with a focus on comfort and ease.", specialties: ["Swedish", "Hot Stone", "Reflexology"], location: "DOWNTOWN" as const },
-      { slug: "olivia-downtown", displayName: "Olivia", bio: "Professional and skilled in therapeutic techniques.", specialties: ["Sports Massage", "Trigger Point", "Stretching"], location: "DOWNTOWN" as const },
-      { slug: "ava-downtown", displayName: "Ava", bio: "Gentle and nurturing, perfect for first-time guests.", specialties: ["Gentle Touch", "Prenatal", "Stress Relief"], location: "DOWNTOWN" as const },
-      { slug: "isabella-downtown", displayName: "Isabella", bio: "Energetic and passionate about holistic wellness.", specialties: ["Thai Massage", "Shiatsu", "Energy Work"], location: "DOWNTOWN" as const },
-      { slug: "mia-downtown", displayName: "Mia", bio: "Detail-oriented with expertise in luxury treatments.", specialties: ["Luxury Spa", "Body Scrubs", "Hydrotherapy"], location: "DOWNTOWN" as const },
-      { slug: "charlotte-downtown", displayName: "Charlotte", bio: "Creative and intuitive, adapting to your needs.", specialties: ["Customized Sessions", "Mindfulness", "Meditation"], location: "DOWNTOWN" as const },
-      { slug: "amelia-downtown", displayName: "Amelia", bio: "Certified specialist in advanced techniques.", specialties: ["Neuromuscular", "Myofascial Release", "Cupping"], location: "DOWNTOWN" as const },
-      { slug: "harper-downtown", displayName: "Harper", bio: "Friendly and professional with years of experience.", specialties: ["Classic Massage", "Couples Massage", "Consultation"], location: "DOWNTOWN" as const },
-      { slug: "ella-downtown", displayName: "Ella", bio: "Passionate about creating memorable experiences.", specialties: ["VIP Services", "Special Occasions", "Gift Packages"], location: "DOWNTOWN" as const },
+      // Downtown only
+      { slug: "sophia-downtown", displayName: "Sophia", bio: "Experienced and attentive, specializing in personalized care.", specialties: ["Relaxation", "Deep Tissue", "Aromatherapy"], locations: ["DOWNTOWN"] },
+      { slug: "emily-downtown", displayName: "Emily", bio: "Warm and welcoming with a focus on comfort and ease.", specialties: ["Swedish", "Hot Stone", "Reflexology"], locations: ["DOWNTOWN"] },
+      { slug: "olivia-downtown", displayName: "Olivia", bio: "Professional and skilled in therapeutic techniques.", specialties: ["Sports Massage", "Trigger Point", "Stretching"], locations: ["DOWNTOWN"] },
+      { slug: "ava-downtown", displayName: "Ava", bio: "Gentle and nurturing, perfect for first-time guests.", specialties: ["Gentle Touch", "Prenatal", "Stress Relief"], locations: ["DOWNTOWN"] },
+      { slug: "isabella-downtown", displayName: "Isabella", bio: "Energetic and passionate about holistic wellness.", specialties: ["Thai Massage", "Shiatsu", "Energy Work"], locations: ["DOWNTOWN"] },
       
-      // West End
-      { slug: "sophia-westend", displayName: "Sophia W", bio: "Skilled practitioner focusing on pain relief and recovery.", specialties: ["Pain Management", "Injury Recovery", "Rehabilitation"], location: "WEST_END" as const },
-      { slug: "emma-westend", displayName: "Emma", bio: "Calm and soothing presence for ultimate relaxation.", specialties: ["Relaxation", "Meditation", "Sound Therapy"], location: "WEST_END" as const },
-      { slug: "madison-westend", displayName: "Madison", bio: "Expert in traditional and modern techniques.", specialties: ["Traditional Thai", "Modern Fusion", "Pressure Point"], location: "WEST_END" as const },
-      { slug: "lily-westend", displayName: "Lily", bio: "Compassionate and attentive to your comfort.", specialties: ["Gentle Care", "Senior Wellness", "Comfort Focus"], location: "WEST_END" as const },
-      { slug: "grace-westend", displayName: "Grace", bio: "Dynamic and versatile in all service offerings.", specialties: ["All Services", "Versatile", "Adaptable"], location: "WEST_END" as const },
-      { slug: "chloe-westend", displayName: "Chloe", bio: "Certified in aromatherapy and essential oils.", specialties: ["Aromatherapy", "Essential Oils", "Natural Healing"], location: "WEST_END" as const },
-      { slug: "zoe-westend", displayName: "Zoe", bio: "Energizing and rejuvenating treatments.", specialties: ["Energy Boost", "Revitalization", "Morning Sessions"], location: "WEST_END" as const },
-      { slug: "luna-westend", displayName: "Luna", bio: "Specializing in evening and night treatments.", specialties: ["Evening Sessions", "Sleep Therapy", "Unwinding"], location: "WEST_END" as const },
-      { slug: "hannah-westend", displayName: "Hannah", bio: "Professional and courteous, always on time.", specialties: ["Punctuality", "Reliability", "Consistency"], location: "WEST_END" as const },
-      { slug: "victoria-westend", displayName: "Victoria", bio: "Premium service provider for discerning clients.", specialties: ["Premium Service", "Luxury Experience", "Excellence"], location: "WEST_END" as const },
+      // West End only
+      { slug: "emma-westend", displayName: "Emma", bio: "Calm and soothing presence for ultimate relaxation.", specialties: ["Relaxation", "Meditation", "Sound Therapy"], locations: ["WEST_END"] },
+      { slug: "madison-westend", displayName: "Madison", bio: "Expert in traditional and modern techniques.", specialties: ["Traditional Thai", "Modern Fusion", "Pressure Point"], locations: ["WEST_END"] },
+      { slug: "lily-westend", displayName: "Lily", bio: "Compassionate and attentive to your comfort.", specialties: ["Gentle Care", "Senior Wellness", "Comfort Focus"], locations: ["WEST_END"] },
+      { slug: "grace-westend", displayName: "Grace", bio: "Dynamic and versatile in all service offerings.", specialties: ["All Services", "Versatile", "Adaptable"], locations: ["WEST_END"] },
+      { slug: "chloe-westend", displayName: "Chloe", bio: "Certified in aromatherapy and essential oils.", specialties: ["Aromatherapy", "Essential Oils", "Natural Healing"], locations: ["WEST_END"] },
+      
+      // Both locations - these hostesses work at both Downtown and West End
+      { slug: "mia-both", displayName: "Mia", bio: "Detail-oriented with expertise in luxury treatments at both locations.", specialties: ["Luxury Spa", "Body Scrubs", "Hydrotherapy"], locations: ["DOWNTOWN", "WEST_END"] },
+      { slug: "charlotte-both", displayName: "Charlotte", bio: "Creative and intuitive, adapting to your needs at both locations.", specialties: ["Customized Sessions", "Mindfulness", "Meditation"], locations: ["DOWNTOWN", "WEST_END"] },
+      { slug: "amelia-both", displayName: "Amelia", bio: "Certified specialist in advanced techniques, available at both locations.", specialties: ["Neuromuscular", "Myofascial Release", "Cupping"], locations: ["DOWNTOWN", "WEST_END"] },
+      { slug: "harper-both", displayName: "Harper", bio: "Friendly and professional with years of experience at both locations.", specialties: ["Classic Massage", "Couples Massage", "Consultation"], locations: ["DOWNTOWN", "WEST_END"] },
+      { slug: "ella-both", displayName: "Ella", bio: "Passionate about creating memorable experiences at both locations.", specialties: ["VIP Services", "Special Occasions", "Gift Packages"], locations: ["DOWNTOWN", "WEST_END"] },
+      { slug: "zoe-both", displayName: "Zoe", bio: "Energizing and rejuvenating treatments at both locations.", specialties: ["Energy Boost", "Revitalization", "Morning Sessions"], locations: ["DOWNTOWN", "WEST_END"] },
+      { slug: "luna-both", displayName: "Luna", bio: "Specializing in evening and night treatments at both locations.", specialties: ["Evening Sessions", "Sleep Therapy", "Unwinding"], locations: ["DOWNTOWN", "WEST_END"] },
+      { slug: "hannah-both", displayName: "Hannah", bio: "Professional and courteous, always on time at both locations.", specialties: ["Punctuality", "Reliability", "Consistency"], locations: ["DOWNTOWN", "WEST_END"] },
+      { slug: "victoria-both", displayName: "Victoria", bio: "Premium service provider for discerning clients at both locations.", specialties: ["Premium Service", "Luxury Experience", "Excellence"], locations: ["DOWNTOWN", "WEST_END"] },
+      { slug: "sophia-both", displayName: "Sophia W", bio: "Skilled practitioner focusing on pain relief and recovery at both locations.", specialties: ["Pain Management", "Injury Recovery", "Rehabilitation"], locations: ["DOWNTOWN", "WEST_END"] },
     ];
 
     const createdHostesses = await db.insert(hostesses).values(hostessData).returning();
