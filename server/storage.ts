@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, and, gte, lte, or, desc, asc, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, or, desc, asc, inArray, sql } from "drizzle-orm";
 import type {
   User,
   InsertUser,
@@ -158,7 +158,7 @@ export class DbStorage implements IStorage {
 
   async getHostesses(location?: string): Promise<Hostess[]> {
     if (location) {
-      return await db.select().from(hostesses).where(eq(hostesses.location, location as any));
+      return await db.select().from(hostesses).where(sql`${hostesses.locations} @> ARRAY[${location}]::text[]`);
     }
     return await db.select().from(hostesses);
   }
@@ -242,7 +242,7 @@ export class DbStorage implements IStorage {
 
     return result
       .filter(r => r.hostesses && r.users && r.services)
-      .filter(r => !location || r.hostesses?.location === location)
+      .filter(r => !location || r.hostesses?.locations?.includes(location))
       .map(r => ({
         ...r.bookings,
         hostess: r.hostesses!,
@@ -262,7 +262,7 @@ export class DbStorage implements IStorage {
 
     return result
       .filter(r => r.hostesses && r.users && r.services)
-      .filter(r => !location || r.hostesses?.location === location)
+      .filter(r => !location || r.hostesses?.locations?.includes(location))
       .map(r => ({
         ...r.bookings,
         hostess: r.hostesses!,

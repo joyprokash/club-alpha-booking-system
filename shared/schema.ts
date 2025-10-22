@@ -40,7 +40,7 @@ export const hostesses = pgTable("hostesses", {
   displayName: text("display_name").notNull(),
   bio: text("bio"),
   specialties: text("specialties").array(),
-  location: locationEnum("location").notNull(),
+  locations: text("locations").array().notNull().default(sql`ARRAY[]::text[]`),
   photoUrl: text("photo_url"),
   active: boolean("active").notNull().default(true),
   userId: varchar("user_id").references(() => users.id), // Link to staff user
@@ -137,7 +137,7 @@ export const insertUserSchema = createInsertSchema(users, {
 export const insertHostessSchema = createInsertSchema(hostesses, {
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/),
   displayName: z.string().min(1),
-  location: z.enum(['DOWNTOWN', 'WEST_END']),
+  locations: z.array(z.enum(['DOWNTOWN', 'WEST_END'])).min(1, "At least one location is required"),
 }).omit({ id: true, createdAt: true });
 
 export const insertServiceSchema = createInsertSchema(services, {
