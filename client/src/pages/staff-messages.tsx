@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
@@ -17,15 +18,27 @@ export default function StaffMessages() {
   const [messageInput, setMessageInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch conversations
+  // Fetch conversations with real-time updates every 5 seconds
   const { data: conversations = [], isLoading: isLoadingConversations } = useQuery<ConversationWithDetails[]>({
     queryKey: ["/api/conversations"],
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 
-  // Fetch messages for selected conversation
+  // Fetch messages for selected conversation with real-time updates
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery<MessageWithSender[]>({
     queryKey: ["/api/conversations", selectedConversation?.id, "messages"],
     enabled: !!selectedConversation,
+    refetchInterval: selectedConversation ? 3000 : false, // Auto-refresh every 3 seconds when viewing
+  });
+
+  // Mark conversation as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: async (conversationId: string) => {
+      return apiRequest("POST", `/api/conversations/${conversationId}/read`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    },
   });
 
   // Send message mutation
@@ -55,6 +68,13 @@ export default function StaffMessages() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Mark conversation as read when selected
+  useEffect(() => {
+    if (selectedConversation) {
+      markAsReadMutation.mutate(selectedConversation.id);
+    }
+  }, [selectedConversation?.id]);
 
   const handleSendMessage = () => {
     if (!messageInput.trim()) return;
@@ -95,14 +115,21 @@ export default function StaffMessages() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
                         <AvatarFallback>
-                          {conversation.client.email.split('@')[0].substring(0, 2).toUpperCase()}
+                          {conversation.client.username.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-semibold truncate">
-                            {conversation.client.email.split('@')[0]}
-                          </h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold truncate">
+                              {conversation.client.username}
+                            </h3>
+                            {conversation.unreadCount && conversation.unreadCount > 0 && (
+                              <Badge variant="default" className="text-xs px-2 py-0.5">
+                                {conversation.unreadCount}
+                              </Badge>
+                            )}
+                          </div>
                           {conversation.lastMessageAt && (
                             <span className="text-xs text-muted-foreground">
                               {format(new Date(conversation.lastMessageAt), "MMM d, h:mm a")}
@@ -142,11 +169,11 @@ export default function StaffMessages() {
               </Button>
               <Avatar className="h-10 w-10">
                 <AvatarFallback>
-                  {selectedConversation.client.email.split('@')[0].substring(0, 2).toUpperCase()}
+                  {selectedConversation.client.username.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="font-semibold">{selectedConversation.client.email.split('@')[0]}</h2>
+                <h2 className="font-semibold">{selectedConversation.client.username}</h2>
                 <p className="text-xs text-muted-foreground">{selectedConversation.client.email}</p>
               </div>
             </div>

@@ -18,15 +18,27 @@ export default function ClientMessages() {
   const [messageInput, setMessageInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch conversations
+  // Fetch conversations with real-time updates every 5 seconds
   const { data: conversations = [], isLoading: isLoadingConversations } = useQuery<ConversationWithDetails[]>({
     queryKey: ["/api/conversations"],
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
   });
 
-  // Fetch messages for selected conversation
+  // Fetch messages for selected conversation with real-time updates
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery<MessageWithSender[]>({
     queryKey: ["/api/conversations", selectedConversation?.id, "messages"],
     enabled: !!selectedConversation,
+    refetchInterval: selectedConversation ? 3000 : false, // Auto-refresh every 3 seconds when viewing
+  });
+
+  // Mark conversation as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: async (conversationId: string) => {
+      return apiRequest("POST", `/api/conversations/${conversationId}/read`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    },
   });
 
   // Fetch all hostesses to allow starting new conversations
@@ -81,6 +93,13 @@ export default function ClientMessages() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Mark conversation as read when selected
+  useEffect(() => {
+    if (selectedConversation) {
+      markAsReadMutation.mutate(selectedConversation.id);
+    }
+  }, [selectedConversation?.id]);
+
   const handleSendMessage = () => {
     if (!messageInput.trim()) return;
     sendMessageMutation.mutate(messageInput);
@@ -133,9 +152,16 @@ export default function ClientMessages() {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-semibold truncate">
-                              {conversation.hostess.displayName}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold truncate">
+                                {conversation.hostess.displayName}
+                              </h3>
+                              {conversation.unreadCount && conversation.unreadCount > 0 && (
+                                <Badge variant="default" className="text-xs px-2 py-0.5">
+                                  {conversation.unreadCount}
+                                </Badge>
+                              )}
+                            </div>
                             {conversation.lastMessageAt && (
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(conversation.lastMessageAt), "MMM d, h:mm a")}
