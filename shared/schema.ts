@@ -148,6 +148,8 @@ export const conversations = pgTable("conversations", {
   clientId: varchar("client_id").notNull().references(() => users.id),
   hostessId: varchar("hostess_id").notNull().references(() => hostesses.id),
   lastMessageAt: timestamp("last_message_at").notNull().defaultNow(),
+  clientLastReadAt: timestamp("client_last_read_at"),
+  hostessLastReadAt: timestamp("hostess_last_read_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (table) => ({
   clientIdx: index("conversations_client_idx").on(table.clientId),
@@ -245,7 +247,9 @@ export const insertUpcomingScheduleSchema = createInsertSchema(upcomingSchedule,
 export const insertConversationSchema = createInsertSchema(conversations).omit({ 
   id: true, 
   createdAt: true, 
-  lastMessageAt: true 
+  lastMessageAt: true,
+  clientLastReadAt: true,
+  hostessLastReadAt: true
 });
 
 export const insertMessageSchema = createInsertSchema(messages, {

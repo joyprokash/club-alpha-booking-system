@@ -60,7 +60,8 @@ export default function ClientMessages() {
   // Start new conversation mutation
   const startConversationMutation = useMutation({
     mutationFn: async (hostessId: string) => {
-      return apiRequest("POST", "/api/conversations", { hostessId });
+      const response = await apiRequest("POST", "/api/conversations", { hostessId });
+      return response.json() as Promise<ConversationWithDetails>;
     },
     onSuccess: (data: ConversationWithDetails) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
