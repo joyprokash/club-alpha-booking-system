@@ -1,14 +1,21 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Search, Key } from "lucide-react";
 import type { User } from "@shared/schema";
 
 export default function AdminClients() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const { toast } = useToast();
 
   const { data: users, isLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
@@ -30,6 +37,46 @@ export default function AdminClients() {
   const sortedClients = filteredClients.slice().sort((a, b) => 
     a.username.localeCompare(b.username)
   );
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ id, password }: { id: string; password: string }) => {
+      return apiRequest("POST", `/api/admin/users/${id}/reset-password`, { password });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      setResetPasswordUser(null);
+      setNewPassword("");
+      toast({
+        title: "Password reset successfully",
+        description: "The client can now use their new password",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to reset password",
+        description: error.message || "An error occurred",
+      });
+    },
+  });
+
+  const handleResetPassword = () => {
+    if (!resetPasswordUser || !newPassword) return;
+    
+    if (newPassword.length < 8) {
+      toast({
+        variant: "destructive",
+        title: "Invalid password",
+        description: "Password must be at least 8 characters",
+      });
+      return;
+    }
+
+    resetPasswordMutation.mutate({
+      id: resetPasswordUser.id,
+      password: newPassword,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -69,6 +116,7 @@ export default function AdminClients() {
                     <TableHead>Email</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Force Reset</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -94,6 +142,21 @@ export default function AdminClients() {
                           <Badge variant="outline">No</Badge>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setResetPasswordUser(client);
+                            setNewPassword("");
+                          }}
+                          className="gap-1"
+                          data-testid={`button-reset-password-${client.id}`}
+                        >
+                          <Key className="h-3 w-3" />
+                          Reset Password
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -101,6 +164,47 @@ export default function AdminClients() {
             )}
           </CardContent>
         </Card>
+
+        {/* Reset Password Dialog */}
+        <Dialog open={!!resetPasswordUser} onOpenChange={(open) => !open && (setResetPasswordUser(null), setNewPassword(""))}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Password</DialogTitle>
+              <DialogDescription>
+                Set a new password for {resetPasswordUser?.email}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">New Password</label>
+                <Input
+                  type="password"
+                  placeholder="Enter new password (min 8 characters)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleResetPassword()}
+                  data-testid="input-new-password"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => (setResetPasswordUser(null), setNewPassword(""))}
+                data-testid="button-cancel-reset"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleResetPassword}
+                disabled={resetPasswordMutation.isPending || newPassword.length < 8}
+                data-testid="button-confirm-reset-password"
+              >
+                {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

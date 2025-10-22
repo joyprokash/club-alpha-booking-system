@@ -1168,8 +1168,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Reset user password (admin only)
-  app.post("/api/admin/users/:id/reset-password", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+  // Reset user password (admin and reception)
+  app.post("/api/admin/users/:id/reset-password", authenticateToken, requireRole("ADMIN", "RECEPTION"), async (req: AuthRequest, res, next) => {
     try {
       const { id } = req.params;
       const { password } = z.object({
