@@ -172,6 +172,10 @@ export function registerExtendedRoutes(app: Express) {
   
   // Optimized for large datasets (e.g., 14,000+ records)
   app.post("/api/clients/bulk-import", importLimiter, authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    // Extend timeout for large imports (5 minutes)
+    req.setTimeout(300000);
+    res.setTimeout(300000);
+    
     try {
       const { csvData } = z.object({ csvData: z.string() }).parse(req.body);
       

@@ -17,8 +17,38 @@ export default function AdminClientImport() {
 
   const importMutation = useMutation({
     mutationFn: async (data: string) => {
-      const response = await apiRequest("POST", "/api/clients/bulk-import", { csvData: data });
-      return response.json();
+      // Create abort controller with 5 minute timeout for large imports
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 300000); // 5 minutes
+      
+      try {
+        const token = localStorage.getItem("auth_token");
+        const response = await fetch("/api/clients/bulk-import", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { "Authorization": `Bearer ${token}` }),
+          },
+          body: JSON.stringify({ csvData: data }),
+          credentials: "include",
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeout);
+        
+        if (!response.ok) {
+          const text = await response.text();
+          throw new Error(`${response.status}: ${text}`);
+        }
+        
+        return response.json();
+      } catch (error: any) {
+        clearTimeout(timeout);
+        if (error.name === 'AbortError') {
+          throw new Error('Import timed out after 5 minutes. Please try with a smaller dataset.');
+        }
+        throw error;
+      }
     },
     onSuccess: (data: any) => {
       setResults(data);
