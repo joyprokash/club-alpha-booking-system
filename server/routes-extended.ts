@@ -168,7 +168,98 @@ export function registerExtendedRoutes(app: Express) {
     }
   });
 
-  // ==================== BULK CLIENT IMPORT ====================
+  // ==================== BULK CLIENT IMPORT WITH REAL-TIME PROGRESS ====================
+  
+  // Real-time import with Server-Sent Events (SSE) for progress updates
+  app.post("/api/clients/bulk-import-stream", importLimiter, authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { csvData } = z.object({ csvData: z.string() }).parse(req.body);
+      
+      // Set headers for Server-Sent Events
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      
+      const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true });
+      const rows = parsed.data as any[];
+      const results: any[] = [];
+      
+      // Send total count
+      res.write(`data: ${JSON.stringify({ type: 'total', count: rows.length })}\n\n`);
+      
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        
+        try {
+          let email = row.email?.trim() || row.Email?.trim() || row.EMAIL?.trim();
+          
+          if (!email) {
+            const values = Object.values(row).filter(v => v && typeof v === 'string' && v.trim());
+            email = values[0]?.toString().trim();
+          }
+          
+          const username = email?.split('@')[0]?.toLowerCase();
+          
+          if (!email || !email.includes("@") || !username) {
+            results.push({ row, success: false, error: "Invalid email format", email: email || "missing" });
+            res.write(`data: ${JSON.stringify({ type: 'progress', index: i + 1, email, success: false, error: 'Invalid email format' })}\n\n`);
+            continue;
+          }
+
+          const existing = await storage.getUserByEmail(email);
+          if (existing) {
+            results.push({ row, success: false, error: "User already exists", email });
+            res.write(`data: ${JSON.stringify({ type: 'progress', index: i + 1, email, success: false, error: 'Already exists' })}\n\n`);
+            continue;
+          }
+
+          const passwordHash = await bcrypt.hash(username, 10);
+
+          await storage.createUser({
+            username,
+            email,
+            passwordHash,
+            role: "CLIENT",
+            forcePasswordReset: true,
+          });
+
+          results.push({ row, success: true, email });
+          res.write(`data: ${JSON.stringify({ type: 'progress', index: i + 1, email, success: true })}\n\n`);
+        } catch (error: any) {
+          results.push({ row, success: false, error: error.message, email: row.email?.trim() || "unknown" });
+          res.write(`data: ${JSON.stringify({ type: 'progress', index: i + 1, email: row.email?.trim() || "unknown", success: false, error: error.message })}\n\n`);
+        }
+      }
+
+      // Send completion
+      res.write(`data: ${JSON.stringify({ 
+        type: 'complete', 
+        total: results.length,
+        imported: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length,
+        results 
+      })}\n\n`);
+      
+      res.end();
+      
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "BULK_IMPORT",
+        entity: "client",
+        entityId: "bulk",
+        meta: { 
+          total: results.length,
+          imported: results.filter(r => r.success).length,
+          failed: results.filter(r => !r.success).length
+        },
+      });
+    } catch (error) {
+      res.write(`data: ${JSON.stringify({ type: 'error', message: (error as Error).message })}\n\n`);
+      res.end();
+    }
+  });
+  
+  // ==================== BULK CLIENT IMPORT (LEGACY) ====================
   
   // Optimized for large datasets (e.g., 14,000+ records)
   app.post("/api/clients/bulk-import", importLimiter, authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {

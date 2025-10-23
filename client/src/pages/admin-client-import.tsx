@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { FileUp, AlertCircle, CheckCircle2, Download, Info } from "lucide-react";
 
 export default function AdminClientImport() {
@@ -14,61 +13,81 @@ export default function AdminClientImport() {
   const queryClient = useQueryClient();
   const [csvData, setCsvData] = useState("");
   const [results, setResults] = useState<any>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0, currentEmail: "" });
 
-  const importMutation = useMutation({
-    mutationFn: async (data: string) => {
-      // Create abort controller with 5 minute timeout for large imports
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 300000); // 5 minutes
-      
-      try {
-        const token = localStorage.getItem("auth_token");
-        const response = await fetch("/api/clients/bulk-import", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token && { "Authorization": `Bearer ${token}` }),
-          },
-          body: JSON.stringify({ csvData: data }),
-          credentials: "include",
-          signal: controller.signal,
-        });
-        
-        clearTimeout(timeout);
-        
-        if (!response.ok) {
-          const text = await response.text();
-          throw new Error(`${response.status}: ${text}`);
-        }
-        
-        return response.json();
-      } catch (error: any) {
-        clearTimeout(timeout);
-        if (error.name === 'AbortError') {
-          throw new Error('Import timed out after 5 minutes. Please try with a smaller dataset.');
-        }
-        throw error;
-      }
-    },
-    onSuccess: (data: any) => {
-      setResults(data);
-      
-      toast({
-        title: "Import completed",
-        description: `${data.imported} clients imported successfully, ${data.failed} failed`,
+  const startImport = async (data: string) => {
+    setIsImporting(true);
+    setResults(null);
+    setProgress({ current: 0, total: 0, currentEmail: "" });
+
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch("/api/clients/bulk-import-stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { "Authorization": `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ csvData: data }),
+        credentials: "include",
       });
 
-      // Invalidate users cache
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-    },
-    onError: (error: any) => {
+      if (!response.ok) {
+        throw new Error(`Failed to start import: ${response.statusText}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("Failed to read response stream");
+      }
+
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+            
+            if (data.type === "total") {
+              setProgress(prev => ({ ...prev, total: data.count }));
+            } else if (data.type === "progress") {
+              setProgress(prev => ({
+                current: data.index,
+                total: prev.total,
+                currentEmail: data.email
+              }));
+            } else if (data.type === "complete") {
+              setResults(data);
+              toast({
+                title: "Import completed",
+                description: `${data.imported} clients imported, ${data.failed} failed`,
+              });
+              queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+            } else if (data.type === "error") {
+              throw new Error(data.message);
+            }
+          }
+        }
+      }
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Import failed",
         description: error.message,
       });
-    },
-  });
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const handleImport = () => {
     if (!csvData.trim()) {
@@ -90,8 +109,7 @@ export default function AdminClientImport() {
       return;
     }
     
-    setResults(null);
-    importMutation.mutate(csvData);
+    startImport(csvData);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,7 +286,7 @@ sophia.taylor@example.io`;
                 type="file"
                 accept=".csv"
                 onChange={handleFileUpload}
-                disabled={importMutation.isPending}
+                disabled={isImporting}
                 className="block w-full text-sm text-muted-foreground
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-md file:border-0
@@ -288,7 +306,7 @@ sophia.taylor@example.io`;
                 placeholder="email&#10;client1@example.com&#10;client2@example.com&#10;..."
                 value={csvData}
                 onChange={(e) => setCsvData(e.target.value)}
-                disabled={importMutation.isPending}
+                disabled={isImporting}
                 rows={10}
                 className="font-mono text-sm"
                 data-testid="textarea-csv-data"
@@ -302,24 +320,26 @@ sophia.taylor@example.io`;
 
             <Button
               onClick={handleImport}
-              disabled={importMutation.isPending || !csvData.trim()}
+              disabled={isImporting || !csvData.trim()}
               className="w-full"
               size="lg"
               data-testid="button-import"
             >
               <FileUp className="h-4 w-4 mr-2" />
-              {importMutation.isPending ? "Importing..." : "Import Clients"}
+              {isImporting ? "Importing..." : "Import Clients"}
             </Button>
 
-            {importMutation.isPending && (
+            {isImporting && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Processing...</span>
-                  <span className="font-medium">Please wait</span>
+                  <span className="text-muted-foreground">
+                    Importing {progress.current.toLocaleString()} of {progress.total.toLocaleString()}...
+                  </span>
+                  <span className="font-medium">{progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0}%</span>
                 </div>
-                <Progress value={undefined} className="w-full" />
-                <p className="text-xs text-muted-foreground text-center">
-                  Processing in batches. This may take several minutes for large imports.
+                <Progress value={progress.total > 0 ? (progress.current / progress.total) * 100 : 0} className="w-full" />
+                <p className="text-xs text-muted-foreground text-center truncate">
+                  Current: {progress.currentEmail || "Preparing..."}
                 </p>
               </div>
             )}
