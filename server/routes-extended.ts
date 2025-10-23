@@ -187,13 +187,20 @@ export function registerExtendedRoutes(app: Express) {
         
         await Promise.all(batch.map(async (row) => {
           try {
-            const email = row.email?.trim();
+            // Try to find email in row - check common column names and first value
+            let email = row.email?.trim() || row.Email?.trim() || row.EMAIL?.trim();
+            
+            // If no email column found, use the first non-empty value in the row
+            if (!email) {
+              const values = Object.values(row).filter(v => v && typeof v === 'string' && v.trim());
+              email = values[0]?.toString().trim();
+            }
             
             // Extract username from email (part before @)
             const username = email?.split('@')[0]?.toLowerCase();
             
             if (!email || !email.includes("@") || !username) {
-              results.push({ row, success: false, error: "Invalid email", email });
+              results.push({ row, success: false, error: "Invalid email format", email: email || "missing" });
               return;
             }
 
