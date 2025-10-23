@@ -359,23 +359,25 @@ export default function AdminCalendar() {
 
       {/* Grid */}
       {viewMode === "daily" ? (
-        <div className="flex-1 overflow-auto relative">
-          <div className="inline-flex">
-            {/* Time Column */}
-            <div className="w-20 flex-shrink-0 border-r bg-card sticky left-0 z-50 shadow-sm">
-              <div className={`${currentZoom.headerHeight} border-b bg-card sticky top-0 z-50`} />
-              {timeSlots.map((slot) => (
-                <div
-                  key={slot}
-                  className={`${currentZoom.rowHeight} border-b flex items-center justify-center text-time-label text-muted-foreground ${currentZoom.textSize}`}
-                >
-                  {formatTimeRange(slot, slot + SLOT_DURATION)}
-                </div>
-              ))}
-            </div>
+        <div className="flex-1 flex overflow-hidden">
+          {/* Time Column - Fixed on left */}
+          <div className="w-20 flex-shrink-0 border-r bg-card overflow-y-auto">
+            <div className={`${currentZoom.headerHeight} border-b bg-card sticky top-0 z-10`} />
+            {timeSlots.map((slot) => (
+              <div
+                key={slot}
+                className={`${currentZoom.rowHeight} border-b flex items-center justify-center text-time-label text-muted-foreground ${currentZoom.textSize}`}
+              >
+                {formatTimeRange(slot, slot + SLOT_DURATION)}
+              </div>
+            ))}
+          </div>
 
-            {/* Hostess Columns */}
-            {sortedHostesses.map((hostess) => (
+          {/* Scrollable Hostess Columns */}
+          <div className="flex-1 overflow-auto">
+            <div className="inline-flex">
+              {/* Hostess Columns */}
+              {sortedHostesses.map((hostess) => (
                 <div 
                   key={hostess.id} 
                   className="border-r flex-shrink-0 relative"
@@ -447,6 +449,7 @@ export default function AdminCalendar() {
                   })}
                 </div>
               ))}
+            </div>
           </div>
         </div>
       ) : (
