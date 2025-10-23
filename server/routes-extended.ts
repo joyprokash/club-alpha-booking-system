@@ -170,22 +170,21 @@ export function registerExtendedRoutes(app: Express) {
 
   // ==================== BULK CLIENT IMPORT WITH REAL-TIME PROGRESS ====================
   
-  // Real-time import with Server-Sent Events (SSE) for progress updates
+  // Real-time import with chunked responses for progress updates
   app.post("/api/clients/bulk-import-stream", importLimiter, authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
     try {
       const { csvData } = z.object({ csvData: z.string() }).parse(req.body);
       
-      // Set headers for Server-Sent Events
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
+      // Set headers for streaming response
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Transfer-Encoding', 'chunked');
       
       const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true });
       const rows = parsed.data as any[];
       const results: any[] = [];
       
       // Send total count
-      res.write(`data: ${JSON.stringify({ type: 'total', count: rows.length })}\n\n`);
+      res.write(JSON.stringify({ type: 'total', count: rows.length }) + '\n');
       
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -202,14 +201,14 @@ export function registerExtendedRoutes(app: Express) {
           
           if (!email || !email.includes("@") || !username) {
             results.push({ row, success: false, error: "Invalid email format", email: email || "missing" });
-            res.write(`data: ${JSON.stringify({ type: 'progress', index: i + 1, email, success: false, error: 'Invalid email format' })}\n\n`);
+            res.write(JSON.stringify({ type: 'progress', index: i + 1, email, success: false, error: 'Invalid email format' }) + '\n');
             continue;
           }
 
           const existing = await storage.getUserByEmail(email);
           if (existing) {
             results.push({ row, success: false, error: "User already exists", email });
-            res.write(`data: ${JSON.stringify({ type: 'progress', index: i + 1, email, success: false, error: 'Already exists' })}\n\n`);
+            res.write(JSON.stringify({ type: 'progress', index: i + 1, email, success: false, error: 'Already exists' }) + '\n');
             continue;
           }
 
@@ -224,21 +223,21 @@ export function registerExtendedRoutes(app: Express) {
           });
 
           results.push({ row, success: true, email });
-          res.write(`data: ${JSON.stringify({ type: 'progress', index: i + 1, email, success: true })}\n\n`);
+          res.write(JSON.stringify({ type: 'progress', index: i + 1, email, success: true }) + '\n');
         } catch (error: any) {
           results.push({ row, success: false, error: error.message, email: row.email?.trim() || "unknown" });
-          res.write(`data: ${JSON.stringify({ type: 'progress', index: i + 1, email: row.email?.trim() || "unknown", success: false, error: error.message })}\n\n`);
+          res.write(JSON.stringify({ type: 'progress', index: i + 1, email: row.email?.trim() || "unknown", success: false, error: error.message }) + '\n');
         }
       }
 
       // Send completion
-      res.write(`data: ${JSON.stringify({ 
+      res.write(JSON.stringify({ 
         type: 'complete', 
         total: results.length,
         imported: results.filter(r => r.success).length,
         failed: results.filter(r => !r.success).length,
         results 
-      })}\n\n`);
+      }) + '\n');
       
       res.end();
       
@@ -254,7 +253,7 @@ export function registerExtendedRoutes(app: Express) {
         },
       });
     } catch (error) {
-      res.write(`data: ${JSON.stringify({ type: 'error', message: (error as Error).message })}\n\n`);
+      res.write(JSON.stringify({ type: 'error', message: (error as Error).message }) + '\n');
       res.end();
     }
   });

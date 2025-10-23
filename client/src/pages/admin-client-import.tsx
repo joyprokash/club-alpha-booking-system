@@ -50,12 +50,12 @@ export default function AdminClientImport() {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
+        const lines = buffer.split("\n");
         buffer = lines.pop() || "";
 
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = JSON.parse(line.slice(6));
+          if (line.trim()) {
+            const data = JSON.parse(line);
             
             if (data.type === "total") {
               setProgress(prev => ({ ...prev, total: data.count }));
