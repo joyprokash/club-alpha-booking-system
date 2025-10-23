@@ -190,6 +190,39 @@ export class DbStorage implements IStorage {
   }
 
   async deleteUser(id: string): Promise<void> {
+    // Delete all related records first to avoid foreign key constraint violations
+    
+    // Delete user's bookings (as client)
+    await db.delete(bookings).where(eq(bookings.clientId, id));
+    
+    // Delete user's messages (as sender)
+    await db.delete(messages).where(eq(messages.senderId, id));
+    
+    // Delete user's conversations (as client)
+    await db.delete(conversations).where(eq(conversations.clientId, id));
+    
+    // Delete user's trigger words (as adder)
+    await db.delete(triggerWords).where(eq(triggerWords.addedBy, id));
+    
+    // Delete user's reviews (as client)
+    await db.delete(reviews).where(eq(reviews.clientId, id));
+    
+    // Update flagged conversations to remove reviewer reference
+    await db.update(flaggedConversations)
+      .set({ reviewedBy: null })
+      .where(eq(flaggedConversations.reviewedBy, id));
+    
+    // Update photo uploads to remove reviewer reference
+    await db.update(photoUploads)
+      .set({ reviewedBy: null })
+      .where(eq(photoUploads.reviewedBy, id));
+    
+    // If user is linked to a hostess, unlink it
+    await db.update(hostesses)
+      .set({ userId: null })
+      .where(eq(hostesses.userId, id));
+    
+    // Finally, delete the user
     await db.delete(users).where(eq(users.id, id));
   }
 
