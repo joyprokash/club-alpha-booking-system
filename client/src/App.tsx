@@ -34,6 +34,7 @@ import AdminClients from "@/pages/admin-clients";
 import AdminHostesses from "@/pages/admin-hostesses";
 import AdminHostessImport from "@/pages/admin-hostess-import";
 import AdminClientImport from "@/pages/admin-client-import";
+import AdminCSVSplitter from "@/pages/admin-csv-splitter";
 import AdminPhotoApprovals from "@/pages/admin-photo-approvals";
 import AdminUpcomingSchedule from "@/pages/admin-upcoming-schedule";
 import AdminTriggerWords from "@/pages/admin-trigger-words";
@@ -192,6 +193,11 @@ function AppRouter() {
                 <Route path="/admin/client-import">
                   <ProtectedRoute allowedRoles={["ADMIN"]}>
                     <AdminClientImport />
+                  </ProtectedRoute>
+                </Route>
+                <Route path="/admin/csv-splitter">
+                  <ProtectedRoute allowedRoles={["ADMIN"]}>
+                    <AdminCSVSplitter />
                   </ProtectedRoute>
                 </Route>
                 <Route path="/admin/import">

@@ -1,4 +1,4 @@
-import { Calendar, Users, Settings, LayoutDashboard, UserCog, Clock, FileUp, FileDown, LogOut, BarChart3, ImageIcon, UserCircle, CalendarClock, MessageCircle, Shield, AlertTriangle } from "lucide-react";
+import { Calendar, Users, Settings, LayoutDashboard, UserCog, Clock, FileUp, FileDown, LogOut, BarChart3, ImageIcon, UserCircle, CalendarClock, MessageCircle, Shield, AlertTriangle, Scissors } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   Sidebar,
@@ -60,6 +60,11 @@ export function AppSidebar() {
       title: "Import Clients",
       url: "/admin/client-import",
       icon: FileUp,
+    },
+    {
+      title: "CSV Splitter",
+      url: "/admin/csv-splitter",
+      icon: Scissors,
     },
     {
       title: "Services",
