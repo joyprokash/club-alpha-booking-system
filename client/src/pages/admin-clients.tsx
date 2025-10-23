@@ -8,11 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Search, Key } from "lucide-react";
+import { Search, Key, ChevronLeft, ChevronRight } from "lucide-react";
 import type { User } from "@shared/schema";
+
+const CLIENTS_PER_PAGE = 100;
 
 export default function AdminClients() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const { toast } = useToast();
@@ -37,6 +40,26 @@ export default function AdminClients() {
   const sortedClients = filteredClients.slice().sort((a, b) => 
     a.username.localeCompare(b.username)
   );
+
+  // Reset to page 1 when search term changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedClients.length / CLIENTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * CLIENTS_PER_PAGE;
+  const endIndex = startIndex + CLIENTS_PER_PAGE;
+  const paginatedClients = sortedClients.slice(startIndex, endIndex);
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  };
 
   const resetPasswordMutation = useMutation({
     mutationFn: async ({ id, password }: { id: string; password: string }) => {
@@ -95,7 +118,7 @@ export default function AdminClients() {
                 type="text"
                 placeholder="Search by username or email..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
                 data-testid="input-search-clients"
               />
@@ -109,58 +132,94 @@ export default function AdminClients() {
                 {searchTerm ? "No clients found matching your search" : "No clients found"}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Username</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Force Reset</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedClients.map((client) => (
-                    <TableRow key={client.id} data-testid={`client-${client.id}`}>
-                      <TableCell className="font-medium">{client.username}</TableCell>
-                      <TableCell>{client.email}</TableCell>
-                      <TableCell>
-                        {client.banned ? (
-                          <Badge variant="destructive" data-testid={`status-banned-${client.id}`}>
-                            Banned
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" data-testid={`status-active-${client.id}`}>
-                            Active
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {client.forcePasswordReset ? (
-                          <Badge variant="destructive">Yes</Badge>
-                        ) : (
-                          <Badge variant="outline">No</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setResetPasswordUser(client);
-                            setNewPassword("");
-                          }}
-                          className="gap-1"
-                          data-testid={`button-reset-password-${client.id}`}
-                        >
-                          <Key className="h-3 w-3" />
-                          Reset Password
-                        </Button>
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Force Reset</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedClients.map((client) => (
+                      <TableRow key={client.id} data-testid={`client-${client.id}`}>
+                        <TableCell className="font-medium">{client.username}</TableCell>
+                        <TableCell>{client.email}</TableCell>
+                        <TableCell>
+                          {client.banned ? (
+                            <Badge variant="destructive" data-testid={`status-banned-${client.id}`}>
+                              Banned
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" data-testid={`status-active-${client.id}`}>
+                              Active
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {client.forcePasswordReset ? (
+                            <Badge variant="destructive">Yes</Badge>
+                          ) : (
+                            <Badge variant="outline">No</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setResetPasswordUser(client);
+                              setNewPassword("");
+                            }}
+                            className="gap-1"
+                            data-testid={`button-reset-password-${client.id}`}
+                          >
+                            <Key className="h-3 w-3" />
+                            Reset Password
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 border-t mt-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {startIndex + 1}-{Math.min(endIndex, sortedClients.length)} of {sortedClients.length} clients
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1}
+                        data-testid="button-previous-page"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                        data-testid="button-next-page"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
