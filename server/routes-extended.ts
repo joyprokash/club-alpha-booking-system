@@ -182,59 +182,56 @@ export function registerExtendedRoutes(app: Express) {
       const parsed = Papa.parse(csvData, { header: true, skipEmptyLines: true });
       const results: any[] = [];
 
-      // Process in batches to avoid overwhelming the database
-      const BATCH_SIZE = 100;
+      // Process sequentially to avoid memory/connection issues with large datasets
       const rows = parsed.data as any[];
       
-      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = rows.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
         
-        await Promise.all(batch.map(async (row) => {
-          try {
-            // Try to find email in row - check common column names and first value
-            let email = row.email?.trim() || row.Email?.trim() || row.EMAIL?.trim();
-            
-            // If no email column found, use the first non-empty value in the row
-            if (!email) {
-              const values = Object.values(row).filter(v => v && typeof v === 'string' && v.trim());
-              email = values[0]?.toString().trim();
-            }
-            
-            // Extract username from email (part before @)
-            const username = email?.split('@')[0]?.toLowerCase();
-            
-            if (!email || !email.includes("@") || !username) {
-              results.push({ row, success: false, error: "Invalid email format", email: email || "missing" });
-              return;
-            }
-
-            // Check if exists
-            const existing = await storage.getUserByEmail(email);
-            if (existing) {
-              results.push({ row, success: false, error: "User already exists", email });
-              return;
-            }
-
-            // Use username as default password and hash it for each user
-            const passwordHash = await bcrypt.hash(username, 10);
-
-            await storage.createUser({
-              username,
-              email,
-              passwordHash,
-              role: "CLIENT",
-              forcePasswordReset: true,
-            });
-
-            results.push({ row, success: true, email });
-          } catch (error: any) {
-            results.push({ row, success: false, error: error.message, email: row.email?.trim() || "unknown" });
+        try {
+          // Try to find email in row - check common column names and first value
+          let email = row.email?.trim() || row.Email?.trim() || row.EMAIL?.trim();
+          
+          // If no email column found, use the first non-empty value in the row
+          if (!email) {
+            const values = Object.values(row).filter(v => v && typeof v === 'string' && v.trim());
+            email = values[0]?.toString().trim();
           }
-        }));
+          
+          // Extract username from email (part before @)
+          const username = email?.split('@')[0]?.toLowerCase();
+          
+          if (!email || !email.includes("@") || !username) {
+            results.push({ row, success: false, error: "Invalid email format", email: email || "missing" });
+            continue;
+          }
+
+          // Check if exists
+          const existing = await storage.getUserByEmail(email);
+          if (existing) {
+            results.push({ row, success: false, error: "User already exists", email });
+            continue;
+          }
+
+          // Use username as default password and hash it for each user
+          const passwordHash = await bcrypt.hash(username, 10);
+
+          await storage.createUser({
+            username,
+            email,
+            passwordHash,
+            role: "CLIENT",
+            forcePasswordReset: true,
+          });
+
+          results.push({ row, success: true, email });
+        } catch (error: any) {
+          results.push({ row, success: false, error: error.message, email: row.email?.trim() || "unknown" });
+        }
         
-        // Small delay between batches to prevent overwhelming the DB
-        if (i + BATCH_SIZE < rows.length) {
-          await new Promise(resolve => setTimeout(resolve, 10));
+        // Small delay every 50 clients to prevent overwhelming the server
+        if ((i + 1) % 50 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
 
