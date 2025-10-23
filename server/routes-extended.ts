@@ -305,8 +305,12 @@ export function registerExtendedRoutes(app: Express) {
           // Hash password
           const passwordHash = await bcrypt.hash(password, 10);
 
+          // Extract username from email (part before @)
+          const username = email.split('@')[0];
+
           // Create user
           await storage.createUser({
+            username,
             email,
             passwordHash,
             role: role as "ADMIN" | "STAFF" | "RECEPTION" | "CLIENT",
@@ -387,7 +391,7 @@ export function registerExtendedRoutes(app: Express) {
               displayName,
               bio: row.bio?.trim() || existingHostess.bio,
               specialties: specialties.length > 0 ? specialties : existingHostess.specialties,
-              location: location as any,
+              locations: [location as "DOWNTOWN" | "WEST_END"],
               active: row.active !== undefined ? row.active === 'true' || row.active === true : existingHostess.active,
             });
             results.push({ row, success: true, action: 'updated', hostess: displayName });
@@ -398,7 +402,7 @@ export function registerExtendedRoutes(app: Express) {
               displayName,
               bio: row.bio?.trim() || null,
               specialties: specialties.length > 0 ? specialties : [],
-              location: location as any,
+              locations: [location as "DOWNTOWN" | "WEST_END"],
               active: row.active !== undefined ? row.active === 'true' || row.active === true : true,
               userId: null,
             });
