@@ -10,7 +10,7 @@ export function Footer() {
           className="text-primary hover:underline"
           data-testid="link-ottawa-seo"
         >
-          Ottawa SEO Inc.
+          Ottawa SEO
         </a>
       </p>
     </footer>

@@ -360,7 +360,7 @@ export default function AdminCalendar() {
       {/* Grid */}
       {viewMode === "daily" ? (
         <div className="flex-1 overflow-auto relative">
-          <div className="inline-flex min-w-full">
+          <div className="inline-flex">
             {/* Time Column */}
             <div className="w-20 flex-shrink-0 border-r bg-card sticky left-0 z-50 shadow-sm">
               <div className={`${currentZoom.headerHeight} border-b bg-card sticky top-0 z-50`} />
