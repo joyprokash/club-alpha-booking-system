@@ -69,11 +69,11 @@ export default function Register() {
       <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-3">
-          <div className="flex justify-center">
-            <img src={logoUrl} alt="Club Alpha" className="h-20 w-20" />
+          <div className="flex flex-col items-center">
+            <img src={logoUrl} alt="Club Alpha" className="h-64 w-64 mb-4" />
+            <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
+            <CardDescription className="text-center">Register as a new client</CardDescription>
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Create Account</CardTitle>
-          <CardDescription className="text-center">Register as a new client</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>

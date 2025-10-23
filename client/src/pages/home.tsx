@@ -134,7 +134,7 @@ export default function Home() {
 
       <div className="flex-1 container mx-auto px-4 py-12 max-w-6xl">
         <div className="flex flex-col items-center text-center mb-8">
-          <img src={logoUrl} alt="Club Alpha" className="h-40 w-40 mb-6" />
+          <img src={logoUrl} alt="Club Alpha" className="h-64 w-64 mb-8" />
           <h1 className="text-4xl font-bold mb-3">Welcome to Club Alpha Booking</h1>
           
           {/* Contact Information */}
