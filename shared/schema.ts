@@ -20,6 +20,7 @@ export const userRoleEnum = pgEnum('user_role', ['ADMIN', 'STAFF', 'RECEPTION', 
 export const locationEnum = pgEnum('location', ['DOWNTOWN', 'WEST_END']);
 export const bookingStatusEnum = pgEnum('booking_status', ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELED']);
 export const photoUploadStatusEnum = pgEnum('photo_upload_status', ['PENDING', 'APPROVED', 'REJECTED']);
+export const reviewStatusEnum = pgEnum('review_status', ['PENDING', 'APPROVED', 'REJECTED']);
 
 // Users Table
 export const users = pgTable("users", {
@@ -194,6 +195,26 @@ export const flaggedConversations = pgTable("flagged_conversations", {
   reviewedIdx: index("flagged_conversations_reviewed_idx").on(table.reviewed),
 }));
 
+// Reviews Table (client reviews for hostesses)
+export const reviews = pgTable("reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  hostessId: varchar("hostess_id").notNull().references(() => hostesses.id),
+  clientId: varchar("client_id").notNull().references(() => users.id),
+  bookingId: varchar("booking_id").notNull().references(() => bookings.id),
+  rating: integer("rating").notNull(), // 1-5 stars
+  comment: text("comment"),
+  status: reviewStatusEnum("status").notNull().default('PENDING'),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  hostessIdx: index("reviews_hostess_idx").on(table.hostessId),
+  clientIdx: index("reviews_client_idx").on(table.clientId),
+  bookingIdx: index("reviews_booking_idx").on(table.bookingId),
+  statusIdx: index("reviews_status_idx").on(table.status),
+  uniqueBookingReview: unique("unique_booking_review").on(table.bookingId),
+}));
+
 // Zod Schemas for Validation
 export const insertUserSchema = createInsertSchema(users, {
   username: z.string().min(1),
@@ -268,6 +289,12 @@ export const insertFlaggedConversationSchema = createInsertSchema(flaggedConvers
   reviewedAt: true
 });
 
+export const insertReviewSchema = createInsertSchema(reviews, {
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().max(1000).optional(),
+  status: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
+}).omit({ id: true, createdAt: true, reviewedBy: true, reviewedAt: true, status: true });
+
 // TypeScript Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -307,6 +334,9 @@ export type InsertTriggerWord = z.infer<typeof insertTriggerWordSchema>;
 
 export type FlaggedConversation = typeof flaggedConversations.$inferSelect;
 export type InsertFlaggedConversation = z.infer<typeof insertFlaggedConversationSchema>;
+
+export type Review = typeof reviews.$inferSelect;
+export type InsertReview = z.infer<typeof insertReviewSchema>;
 
 // Additional types for API responses
 export type BookingWithDetails = Booking & {
@@ -349,5 +379,12 @@ export type TriggerWordWithDetails = TriggerWord & {
 export type FlaggedConversationWithDetails = FlaggedConversation & {
   conversation: ConversationWithDetails;
   message: Message;
+  reviewer?: User;
+};
+
+export type ReviewWithDetails = Review & {
+  client: User;
+  hostess: Hostess;
+  booking: Booking;
   reviewer?: User;
 };

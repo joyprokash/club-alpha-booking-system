@@ -35,6 +35,9 @@ import type {
   FlaggedConversation,
   InsertFlaggedConversation,
   FlaggedConversationWithDetails,
+  Review,
+  InsertReview,
+  ReviewWithDetails,
 } from "@shared/schema";
 import {
   users,
@@ -50,6 +53,7 @@ import {
   messages,
   triggerWords,
   flaggedConversations,
+  reviews,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -145,6 +149,17 @@ export interface IStorage {
   getFlaggedConversations(reviewed?: boolean): Promise<FlaggedConversationWithDetails[]>;
   createFlaggedConversation(data: InsertFlaggedConversation): Promise<FlaggedConversation>;
   markFlaggedConversationAsReviewed(id: string, reviewerId: string): Promise<void>;
+
+  // Review operations
+  getReviewsByHostess(hostessId: string, approvedOnly?: boolean): Promise<ReviewWithDetails[]>;
+  getReviewsByClient(clientId: string): Promise<ReviewWithDetails[]>;
+  getReviewById(id: string): Promise<ReviewWithDetails | undefined>;
+  canClientReview(bookingId: string, clientId: string): Promise<boolean>;
+  createReview(data: InsertReview): Promise<Review>;
+  getPendingReviews(): Promise<ReviewWithDetails[]>;
+  approveReview(id: string, reviewerId: string): Promise<Review>;
+  rejectReview(id: string, reviewerId: string): Promise<Review>;
+  getHostessAverageRating(hostessId: string): Promise<{ average: number; count: number }>;
 }
 
 export class DbStorage implements IStorage {
@@ -883,6 +898,157 @@ export class DbStorage implements IStorage {
         reviewedAt: new Date() 
       })
       .where(eq(flaggedConversations.id, id));
+  }
+
+  // Review operations
+  async getReviewsByHostess(hostessId: string, approvedOnly: boolean = false): Promise<ReviewWithDetails[]> {
+    const conditions = approvedOnly 
+      ? and(eq(reviews.hostessId, hostessId), eq(reviews.status, 'APPROVED'))
+      : eq(reviews.hostessId, hostessId);
+
+    const results = await db
+      .select()
+      .from(reviews)
+      .leftJoin(users, eq(reviews.clientId, users.id))
+      .leftJoin(hostesses, eq(reviews.hostessId, hostesses.id))
+      .leftJoin(bookings, eq(reviews.bookingId, bookings.id))
+      .where(conditions)
+      .orderBy(desc(reviews.createdAt));
+
+    return results.map(row => ({
+      ...row.reviews,
+      client: row.users!,
+      hostess: row.hostesses!,
+      booking: row.bookings!,
+      reviewer: undefined,
+    }));
+  }
+
+  async getReviewsByClient(clientId: string): Promise<ReviewWithDetails[]> {
+    const results = await db
+      .select()
+      .from(reviews)
+      .leftJoin(users, eq(reviews.clientId, users.id))
+      .leftJoin(hostesses, eq(reviews.hostessId, hostesses.id))
+      .leftJoin(bookings, eq(reviews.bookingId, bookings.id))
+      .where(eq(reviews.clientId, clientId))
+      .orderBy(desc(reviews.createdAt));
+
+    return results.map(row => ({
+      ...row.reviews,
+      client: row.users!,
+      hostess: row.hostesses!,
+      booking: row.bookings!,
+      reviewer: undefined,
+    }));
+  }
+
+  async getReviewById(id: string): Promise<ReviewWithDetails | undefined> {
+    const results = await db
+      .select()
+      .from(reviews)
+      .leftJoin(users, eq(reviews.clientId, users.id))
+      .leftJoin(hostesses, eq(reviews.hostessId, hostesses.id))
+      .leftJoin(bookings, eq(reviews.bookingId, bookings.id))
+      .where(eq(reviews.id, id))
+      .limit(1);
+
+    if (results.length === 0) return undefined;
+
+    const row = results[0];
+    return {
+      ...row.reviews,
+      client: row.users!,
+      hostess: row.hostesses!,
+      booking: row.bookings!,
+      reviewer: undefined,
+    };
+  }
+
+  async canClientReview(bookingId: string, clientId: string): Promise<boolean> {
+    // Check if booking exists and belongs to client
+    const booking = await db.select().from(bookings)
+      .where(and(eq(bookings.id, bookingId), eq(bookings.clientId, clientId)))
+      .limit(1);
+
+    if (booking.length === 0) return false;
+
+    // Check if review already exists for this booking
+    const existingReview = await db.select().from(reviews)
+      .where(eq(reviews.bookingId, bookingId))
+      .limit(1);
+
+    return existingReview.length === 0;
+  }
+
+  async createReview(data: InsertReview): Promise<Review> {
+    const result = await db.insert(reviews).values(data).returning();
+    return result[0];
+  }
+
+  async getPendingReviews(): Promise<ReviewWithDetails[]> {
+    const results = await db
+      .select()
+      .from(reviews)
+      .leftJoin(users, eq(reviews.clientId, users.id))
+      .leftJoin(hostesses, eq(reviews.hostessId, hostesses.id))
+      .leftJoin(bookings, eq(reviews.bookingId, bookings.id))
+      .where(eq(reviews.status, 'PENDING'))
+      .orderBy(desc(reviews.createdAt));
+
+    return results.map(row => ({
+      ...row.reviews,
+      client: row.users!,
+      hostess: row.hostesses!,
+      booking: row.bookings!,
+      reviewer: undefined,
+    }));
+  }
+
+  async approveReview(id: string, reviewerId: string): Promise<Review> {
+    const result = await db
+      .update(reviews)
+      .set({ 
+        status: 'APPROVED', 
+        reviewedBy: reviewerId, 
+        reviewedAt: sql`NOW()` 
+      })
+      .where(eq(reviews.id, id))
+      .returning();
+    
+    return result[0];
+  }
+
+  async rejectReview(id: string, reviewerId: string): Promise<Review> {
+    const result = await db
+      .update(reviews)
+      .set({ 
+        status: 'REJECTED', 
+        reviewedBy: reviewerId, 
+        reviewedAt: sql`NOW()` 
+      })
+      .where(eq(reviews.id, id))
+      .returning();
+    
+    return result[0];
+  }
+
+  async getHostessAverageRating(hostessId: string): Promise<{ average: number; count: number }> {
+    const result = await db
+      .select({
+        average: sql<number>`COALESCE(AVG(${reviews.rating}), 0)`,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(reviews)
+      .where(and(
+        eq(reviews.hostessId, hostessId),
+        eq(reviews.status, 'APPROVED')
+      ));
+
+    return {
+      average: Number(result[0]?.average || 0),
+      count: Number(result[0]?.count || 0),
+    };
   }
 }
 

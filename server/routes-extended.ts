@@ -825,4 +825,121 @@ export function registerExtendedRoutes(app: Express) {
       next(error);
     }
   });
+
+  // ==================== REVIEWS ====================
+  
+  // Submit a review (CLIENT only, for completed bookings)
+  app.post("/api/reviews", authenticateToken, requireRole("CLIENT"), async (req: AuthRequest, res, next) => {
+    try {
+      const parsed = req.body;
+      
+      // Verify client can review this booking
+      const canReview = await storage.canClientReview(parsed.bookingId, req.user!.id);
+      if (!canReview) {
+        return res.status(403).json({ error: "You cannot review this booking (either it doesn't exist, doesn't belong to you, or you've already reviewed it)" });
+      }
+
+      // Create the review with PENDING status
+      const review = await storage.createReview({
+        ...parsed,
+        clientId: req.user!.id,
+      });
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "CREATE",
+        entity: "review",
+        entityId: review.id,
+        meta: { bookingId: parsed.bookingId, rating: parsed.rating },
+      });
+
+      res.status(201).json(review);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get reviews for a specific hostess (approved reviews only for non-admins)
+  app.get("/api/reviews/hostess/:hostessId", async (req: AuthRequest, res, next) => {
+    try {
+      const { hostessId } = req.params;
+      const approvedOnly = !req.user || req.user.role !== "ADMIN";
+      
+      const reviews = await storage.getReviewsByHostess(hostessId, approvedOnly);
+      res.json(reviews);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get hostess average rating and review count
+  app.get("/api/hostesses/:id/rating", async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const rating = await storage.getHostessAverageRating(id);
+      res.json(rating);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get all pending reviews (ADMIN only)
+  app.get("/api/admin/reviews/pending", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const reviews = await storage.getPendingReviews();
+      res.json(reviews);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Approve a review (ADMIN only)
+  app.post("/api/admin/reviews/:id/approve", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const review = await storage.approveReview(id, req.user!.id);
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entity: "review",
+        entityId: id,
+        meta: { status: "APPROVED" },
+      });
+
+      res.json(review);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Reject a review (ADMIN only)
+  app.post("/api/admin/reviews/:id/reject", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+      const review = await storage.rejectReview(id, req.user!.id);
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "UPDATE",
+        entity: "review",
+        entityId: id,
+        meta: { status: "REJECTED" },
+      });
+
+      res.json(review);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get current user's reviews (CLIENT only)
+  app.get("/api/reviews/my-reviews", authenticateToken, requireRole("CLIENT"), async (req: AuthRequest, res, next) => {
+    try {
+      const reviews = await storage.getReviewsByClient(req.user!.id);
+      res.json(reviews);
+    } catch (error) {
+      next(error);
+    }
+  });
 }
