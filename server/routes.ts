@@ -1217,6 +1217,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete user (admin only)
+  app.delete("/api/admin/users/:id", authenticateToken, requireRole("ADMIN"), async (req: AuthRequest, res, next) => {
+    try {
+      const { id } = req.params;
+
+      // Prevent self-deletion
+      if (req.user?.id === id) {
+        return res.status(400).json({ 
+          error: { code: "BAD_REQUEST", message: "Cannot delete your own account" } 
+        });
+      }
+
+      // Get user info before deletion for audit log
+      const user = await storage.getUserById(id);
+      if (!user) {
+        return res.status(404).json({ 
+          error: { code: "NOT_FOUND", message: "User not found" } 
+        });
+      }
+
+      await storage.deleteUser(id);
+
+      await storage.createAuditLog({
+        userId: req.user?.id,
+        action: "DELETE",
+        entity: "user",
+        entityId: id,
+        meta: { email: user.email, role: user.role },
+      });
+
+      res.json({ success: true, message: "User deleted successfully" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // First-time password change (for users with forcePasswordReset)
   app.post("/api/auth/change-password", authenticateToken, async (req: AuthRequest, res, next) => {
     try {

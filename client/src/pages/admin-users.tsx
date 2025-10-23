@@ -117,6 +117,26 @@ export default function AdminUsers() {
     },
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/admin/users/${id}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({ 
+        title: "User deleted successfully",
+        description: "The user has been permanently removed from the system"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to delete user",
+        description: error.message,
+      });
+    },
+  });
+
   const resetClientBookingsMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("DELETE", "/api/admin/bookings/reset-clients", {});
@@ -313,6 +333,22 @@ export default function AdminUsers() {
                                     Ban
                                   </>
                                 )}
+                              </Button>
+                            )}
+                            {user.id !== currentUser?.id && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm(`Are you sure you want to delete ${user.email}? This action cannot be undone and will permanently remove the user and all associated data.`)) {
+                                    deleteUserMutation.mutate(user.id);
+                                  }
+                                }}
+                                disabled={deleteUserMutation.isPending}
+                                data-testid={`button-delete-${user.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
                               </Button>
                             )}
                           </div>
