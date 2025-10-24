@@ -70,9 +70,11 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
-    const { setupVite } = await import("./vite");
+    // Only import vite in development - this entire block is tree-shaken in production
+    const { setupVite } = await import("./vite.js");
     await setupVite(app, server);
   } else {
+    // Production: serve pre-built static files
     serveStatic(app);
   }
 
