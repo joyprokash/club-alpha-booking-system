@@ -14,9 +14,21 @@ export function log(message: string, source = "express") {
 }
 
 export function serveStatic(app: Express) {
+  // In production, dist/index.js is in the dist folder, so public is at dist/public
+  // import.meta.dirname will be the dist folder when bundled
   const distPath = path.resolve(import.meta.dirname, "public");
 
   if (!fs.existsSync(distPath)) {
+    // Fallback: try relative to process.cwd()
+    const fallbackPath = path.resolve(process.cwd(), "dist", "public");
+    if (fs.existsSync(fallbackPath)) {
+      app.use(express.static(fallbackPath));
+      app.use("*", (_req, res) => {
+        res.sendFile(path.resolve(fallbackPath, "index.html"));
+      });
+      return;
+    }
+    
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`,
     );
